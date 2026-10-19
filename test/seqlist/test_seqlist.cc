@@ -1,6 +1,8 @@
 #include "doctest/doctest.h"
 #include "toylib/seqlist.h"
 
+#include <vector>
+
 using namespace std;
 
 namespace {
@@ -48,6 +50,25 @@ TEST_SUITE("SeqList") {
         CHECK_EQ(data[2], 2);
 
         CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_insert(&seq_list, 4, 1024));
+    }
+
+    TEST_CASE("Easy: seq_list_delete") {
+        SeqList seq_list;
+
+        vector<TOYLIB_SEQLIST_ELEMENT_TYPE> arr{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        TOYLIB_SEQLIST_ELEMENT_TYPE element = 0;
+        seq_list_create(&seq_list, arr.size());
+
+        for (size_t i = 0; i < arr.size(); ++i) {
+            seq_list_insert(&seq_list, i, arr[i]);
+        }
+
+        arr.erase(arr.begin() + 5);
+        seq_list_delete(&seq_list, 5, &element);
+
+        CHECK_EQ(element, 6);
+        for (size_t i = 0; i < arr.size(); ++i)
+            CHECK_EQ(arr[i], seq_list.data_[i]);
     }
 }
 
