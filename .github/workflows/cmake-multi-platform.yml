@@ -1,0 +1,93 @@
+# 参考: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
+name: cmake-multi-platform
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.c_compiler }} / ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # 设为 false: 某个组合失败时不影响其它组合继续跑
+      fail-fast: false
+
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        build_type: [ Release ]
+        c_compiler: [ gcc, clang, cl ]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+
+    steps:
+      # 检出源码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 拉取git子模块
+      - name: Fetch submodules
+        shell: bash
+        run: |
+          git submodule update --init --recursive
+          git submodule status
+
+      # 把重复出现的字符串(比如构建目录)转成step output, 供后续步骤复用
+      - name: Set reusable strings
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      # 打印编译器版本
+      - name: Show compiler version
+        shell: bash
+        run: |
+          if [ "${{ matrix.c_compiler }}" = "cl" ]; then
+            cl 2>&1 | head -n 3 || true
+          else
+            ${{ matrix.cpp_compiler }} --version | head -n 1
+          fi
+
+      # 配置 CMake, 输出到build子目录
+      - name: Configure CMake
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -S ${{ github.workspace }}
+
+      # 编译, Windows 默认生成器是多配置的, 必须用 --config 指定构建类型
+      - name: Build
+        run: >
+          cmake --build ${{ steps.strings.outputs.build-output-dir }}
+          --config ${{ matrix.build_type }}
+          --parallel
+
+      # 运行测试
+      - name: Run tests
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: >
+          ctest
+          --build-config ${{ matrix.build_type }}
+          --output-on-failure
+          --timeout 300
