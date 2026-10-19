@@ -10,6 +10,7 @@ extern "C" {
 #endif // __cplusplus
 
 #include <stdint.h>
+#include <stddef.h>
 #include "toylib/utils/error.h"
 
 #ifndef TOYLIB_SEQLIST_ELEMENT_TYPE
