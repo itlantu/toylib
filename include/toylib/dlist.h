@@ -38,10 +38,18 @@ ToylibError dlist_init(DList* dlist);
  * @param dlist 目标链表, 不为空指针
  * @param index 插入下标, 即插入值在链表的下标
  * @param value 插入值
- * @return
+ * @return 成功或失败原因
  */
 ToylibError dlist_insert(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE value);
-ToylibError dlist_delete(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value);
+
+/**
+ * 删除链表指定位置的节点
+ * @param dlist 目标链表, 不为空指针
+ * @param index 删除值的下标, 即被删除节点在链表的下标
+ * @param deleted_value 被删除节点的值, 为空指针则不赋值
+ * @return 成功或失败原因
+ */
+ToylibError dlist_delete(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* deleted_value);
 ToylibError dlist_find(DList* dlist, size_t* index, TOYLIB_DLIST_VALUE_TYPE value);
 ToylibError dlist_free(DList* dlist);
 
