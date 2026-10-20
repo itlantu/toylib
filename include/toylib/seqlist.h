@@ -28,8 +28,7 @@ extern "C" {
 
 #ifndef TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
 #define TOYLIB_SEQLIST_ELEMENT_NOT_FOUND SIZE_MAX
-#endif // TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
-
+#endif  // TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
 
 typedef struct {
     size_t capacity_;
