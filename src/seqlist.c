@@ -35,6 +35,8 @@ ToylibError seq_list_init(SeqList* seq_list, TOYLIB_SEQLIST_ELEMENT_TYPE* data, 
 ToylibError seq_list_insert(SeqList* seq_list, const size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE element) {
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
+    if (seq_list->data_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
 
     const size_t length = seq_list->length_;
     if (index > length)
@@ -55,6 +57,8 @@ ToylibError seq_list_insert(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
 ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE* deleted_element) {
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
+    if (seq_list->data_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
 
     const size_t length = seq_list->length_;
     if (!length)
@@ -82,7 +86,7 @@ ToylibError seq_list_find(const SeqList* seq_list, size_t* index, const TOYLIB_S
     if (index == NULL)
         return TOYLIB_ERR_BAD_ARG_2;
     if (seq_list->data_ == NULL)
-        return TOYLIB_ERR_EMPTY;
+        return TOYLIB_ERR_NOT_INITIALIZED;
 
     const size_t length = seq_list->length_;
     const TOYLIB_SEQLIST_ELEMENT_TYPE* data = seq_list->data_;
@@ -101,6 +105,8 @@ ToylibError seq_list_find(const SeqList* seq_list, size_t* index, const TOYLIB_S
 ToylibError seq_list_free(SeqList* seq_list) {
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
+    if (seq_list->data_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
 
     free(seq_list->data_);
 
