@@ -69,7 +69,8 @@ ToylibError seq_list_delete(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEM
 ToylibError seq_list_find(SeqList* seq_list, size_t* index, ToylibError element);
 
 /**
- * 释放顺序表分配的内存
+ * 释放顺序表分配的内存, 并把字段复位(容量0, 长度0, data_为空)
+ * 仅适用于seq_list_create创建的顺序表; seq_list_init只借用调用方内存, 不应调用本函数
  * @param seq_list 目标顺序表, 不为空指针
  * @return 成功或失败原因
  */
