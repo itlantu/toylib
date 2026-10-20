@@ -16,7 +16,7 @@ jobs:
     steps:
       # 只检查代码有没有格式化, 不需要子模块
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # 固定clang-format版本
       - name: Install clang-format 19.1.5
