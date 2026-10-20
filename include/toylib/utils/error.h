@@ -17,6 +17,8 @@ typedef enum {
     TOYLIB_ERR_CAPACITY_FULL,
     // ERR_EMPTY, 当前数据结构的容量为空, 无法删除元素
     TOYLIB_ERR_EMPTY,
+    // NOT_INITIALIZED, 未初始化
+    TOYLIB_ERR_NOT_INITIALIZED,
 
     // BAD_ARG_1, 函数调用时, 第一个参数不合法
     TOYLIB_ERR_BAD_ARG_1,
