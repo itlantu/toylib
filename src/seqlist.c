@@ -71,3 +71,14 @@ ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
         *deleted_element = element;
     return TOYLIB_OK;
 }
+
+ToylibError seq_list_free(SeqList* seq_list) {
+    if (seq_list == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+
+    free(seq_list->data_);
+    seq_list->capacity_ = 0;
+    seq_list->length_ = 0;
+    
+    return TOYLIB_OK;
+}
