@@ -8,6 +8,7 @@
 #define TOYLIB_TEST_DLIST_SUPPORT_H
 
 #include <cstdlib>
+#include <initializer_list>
 #include <vector>
 
 #include "doctest/doctest.h"
@@ -51,6 +52,19 @@ inline std::vector<Value> to_values_reversed(const DList& dlist) {
 inline DList make_dlist() {
     DList dlist{};
     dlist_init(&dlist);
+    return dlist;
+}
+
+/**
+ * 建一条链表并按顺序填好初值
+ * @param values 初始元素
+ * @return 初始化好的链表, 用完需要free_nodes
+ * @note 插入位置取length_, 所以链表里的顺序就是传入顺序
+ */
+inline DList make_dlist(const std::initializer_list<Value> values) {
+    DList dlist = make_dlist();
+    for (const Value value : values)
+        dlist_insert(&dlist, dlist.length_, value);
     return dlist;
 }
 
