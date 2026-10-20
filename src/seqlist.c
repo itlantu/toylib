@@ -56,6 +56,8 @@ ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
 
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
+    if (!length)
+        return TOYLIB_ERR_EMPTY;
     if (index >= length)
         return TOYLIB_ERR_OUT_OF_RANGE;
 
