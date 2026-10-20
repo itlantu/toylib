@@ -52,10 +52,10 @@ ToylibError seq_list_insert(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
 }
 
 ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE* deleted_element) {
-    const size_t length = seq_list->length_;
-
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
+
+    const size_t length = seq_list->length_;
     if (!length)
         return TOYLIB_ERR_EMPTY;
     if (index >= length)
