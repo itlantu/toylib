@@ -77,8 +77,11 @@ ToylibError seq_list_free(SeqList* seq_list) {
         return TOYLIB_ERR_BAD_ARG_1;
 
     free(seq_list->data_);
+
+    // 复位字段
     seq_list->capacity_ = 0;
     seq_list->length_ = 0;
-    
+    seq_list->data_ = NULL;
+
     return TOYLIB_OK;
 }
