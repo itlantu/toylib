@@ -52,3 +52,32 @@ ToylibError dlist_insert(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TY
 
     return TOYLIB_OK;
 }
+
+ToylibError dlist_delete(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE* deleted_value) {
+    if (dlist == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (dlist->head_ == NULL || dlist->tail_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+    if (dlist->head_->next_ == dlist->tail_)
+        return TOYLIB_ERR_EMPTY;
+    if (index >= dlist->length_)
+        return TOYLIB_ERR_OUT_OF_RANGE;
+
+    DListNode* p = dlist->head_;
+    for (size_t i = 0; i <= index; ++i) {
+        p = p->next_;
+    }
+
+    if (deleted_value != NULL)
+        *deleted_value = p->value_;
+    // 移除
+    DListNode* prev_node = p->prev_;
+    DListNode* next_node = p->next_;
+    free(p);
+
+    prev_node->next_ = next_node;
+    next_node->prev_ = prev_node;
+    dlist->length_ -= 1;
+
+    return TOYLIB_OK;
+}
