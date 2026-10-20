@@ -223,6 +223,53 @@ TEST_CASE("delete never writes past the capacity") {
 }
 
 /**
+ * 校验find拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("find rejects a null list pointer") {
+    size_t index = 0;
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_find(nullptr, &index, 1));
+}
+
+/**
+ * 校验find拒绝空的出参, 返回BAD_ARG_2
+ * @note 没地方写下标就没法带回结果, 属于调用方的错误
+ */
+TEST_CASE("find rejects a null index out parameter") {
+    SeqList list = make_list(8, {1, 2, 3});
+
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_find(&list, nullptr, 2));
+    seq_list_free(&list);
+}
+
+/**
+ * 校验空表里查不到任何元素
+ * @note 查不到时index出参写成哨兵值TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
+ */
+TEST_CASE("find on an empty list reports not found") {
+    SeqList list = make_list(4, {});
+    size_t index = 99;
+
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 1));
+    CHECK_EQ(index, TOYLIB_SEQLIST_ELEMENT_NOT_FOUND);
+
+    seq_list_free(&list);
+}
+
+/**
+ * 校验查不到时index出参写成哨兵值, 而不是留着调用方的原值
+ * @note 不写的话调用方分不清"没找到"和"找到下标0"
+ */
+TEST_CASE("find reports not found by writing the sentinel into the index") {
+    SeqList list = make_list(8, {10, 20, 30});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 42));
+
+    CHECK_EQ(index, TOYLIB_SEQLIST_ELEMENT_NOT_FOUND);
+    seq_list_free(&list);
+}
+
+/**
  * 校验free拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("free rejects a null list pointer") {

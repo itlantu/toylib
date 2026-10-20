@@ -136,4 +136,59 @@ TEST_CASE("delete accepts a null out parameter") {
     seq_list_free(&list);
 }
 
+/**
+ * 校验find能定位到表中间的某个元素
+ * @note 契约: 返回OK, index出参是元素在表中的下标
+ */
+TEST_CASE("find returns the index of an element") {
+    SeqList list = make_list(8, {10, 20, 30, 40});
+    size_t index = 99;
+
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 30));
+    CHECK_EQ(index, 2);
+
+    seq_list_free(&list);
+}
+
+/**
+ * 校验find能定位到首个元素
+ * @note 下标0是查找结果的下界, 不能和"没找到"混淆
+ */
+TEST_CASE("find locates the first element") {
+    SeqList list = make_list(8, {10, 20, 30});
+    size_t index = 99;
+
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 10));
+    CHECK_EQ(index, 0);
+
+    seq_list_free(&list);
+}
+
+/**
+ * 校验find能定位到末尾元素
+ * @note 下标length-1是查找结果的上界
+ */
+TEST_CASE("find locates the last element") {
+    SeqList list = make_list(8, {10, 20, 30});
+    size_t index = 99;
+
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 30));
+    CHECK_EQ(index, 2);
+
+    seq_list_free(&list);
+}
+
+/**
+ * 校验元素重复出现时, find返回第一次出现的下标
+ */
+TEST_CASE("find returns the first occurrence of a duplicated element") {
+    SeqList list = make_list(8, {5, 7, 7, 9});
+    size_t index = 99;
+
+    CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &index, 7));
+    CHECK_EQ(index, 1);
+
+    seq_list_free(&list);
+}
+
 TEST_SUITE_END();
