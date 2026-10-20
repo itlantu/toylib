@@ -26,6 +26,11 @@ extern "C" {
 #define TOYLIB_SEQLIST_MAX_CAPACITY 100000
 #endif  // TOYLIB_SEQLIST_MAX_CAPACITY
 
+#ifndef TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
+#define TOYLIB_SEQLIST_ELEMENT_NOT_FOUND SIZE_MAX
+#endif // TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
+
+
 typedef struct {
     size_t capacity_;
     size_t length_;
@@ -67,7 +72,14 @@ ToylibError seq_list_insert(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEM
  */
 ToylibError seq_list_delete(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE* deleted_element);
 
-ToylibError seq_list_find(SeqList* seq_list, size_t* index, ToylibError element);
+/**
+ * 在顺序表中查找指定元素的位置
+ * @param seq_list 目标顺序表, 不为空指针
+ * @param index 元素下标, 如果顺序表找不到对应的元素则赋值为TOYLIB_SEQLIST_ELEMENT_NOT_FOUND
+ * @param element 查找元素
+ * @return 成功或失败原因
+ */
+ToylibError seq_list_find(const SeqList* seq_list, size_t* index, TOYLIB_SEQLIST_ELEMENT_TYPE element);
 
 /**
  * 释放顺序表分配的内存, 并把字段复位(容量0, 长度0, data_为空)
