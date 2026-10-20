@@ -61,12 +61,18 @@ ToylibError seq_list_insert(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEM
  * 在顺序表中删除指定位置的元素
  * @param seq_list 目标顺序表, 不为空指针
  * @param index 删除下标, 即被删除元素在顺序表的下标
- * @param element 被删除的元素, 为空指针则不赋值
- * @return
+ * @param deleted_element 被删除的元素, 为空指针则不赋值
+ * @return 成功或失败原因
  */
 ToylibError seq_list_delete(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE* deleted_element);
 
 ToylibError seq_list_find(SeqList* seq_list, size_t* index, ToylibError element);
+
+/**
+ * 释放顺序表分配的内存
+ * @param seq_list 目标顺序表, 不为空指针
+ * @return 成功或失败原因
+ */
 ToylibError seq_list_free(SeqList* seq_list);
 
 #ifdef __cplusplus
