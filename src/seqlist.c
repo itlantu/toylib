@@ -1,4 +1,5 @@
 #include "toylib/seqlist.h"
+
 #include <stdlib.h>
 
 ToylibError seq_list_create(SeqList* seq_list, const size_t capacity) {

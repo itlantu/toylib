@@ -7,19 +7,20 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
 #include "toylib/utils/error.h"
 
 #ifndef TOYLIB_SEQLIST_ELEMENT_TYPE
 #define TOYLIB_SEQLIST_ELEMENT_TYPE int
-#endif // TOYLIB_SEQLIST_ELEMENT_TYPE
+#endif  // TOYLIB_SEQLIST_ELEMENT_TYPE
 
 #ifndef TOYLIB_SEQLIST_ELEMENT_IS_EQUAL
 #define TOYLIB_SEQLIST_ELEMENT_IS_EQUAL(a, b) a == b
-#endif // TOYLIB_SEQLIST_ELEMENT_IS_EQUAL
+#endif  // TOYLIB_SEQLIST_ELEMENT_IS_EQUAL
 
 #ifndef TOYLIB_SEQLIST_MAX_CAPACITY
 #define TOYLIB_SEQLIST_MAX_CAPACITY 100000
@@ -29,7 +30,7 @@ typedef struct {
     size_t capacity_;
     size_t length_;
     TOYLIB_SEQLIST_ELEMENT_TYPE* data_;
-}SeqList;
+} SeqList;
 
 /**
  * 创建顺序表, 根据容量动态分配内存
@@ -78,6 +79,6 @@ ToylibError seq_list_free(SeqList* seq_list);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#endif // TOYLIB_SEQLIST_H
+#endif  // TOYLIB_SEQLIST_H

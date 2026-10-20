@@ -3,7 +3,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 typedef enum {
     // OK, 无异常
@@ -27,7 +27,7 @@ typedef enum {
     // BAD_ARG_4, 函数调用时, 第四个参数不合法
     TOYLIB_ERR_BAD_ARG_4,
 
-}ToylibError;
+} ToylibError;
 
 #ifdef __cplusplus
 }
