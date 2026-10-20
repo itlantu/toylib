@@ -76,6 +76,28 @@ ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
     return TOYLIB_OK;
 }
 
+ToylibError seq_list_find(const SeqList* seq_list, size_t* index, const TOYLIB_SEQLIST_ELEMENT_TYPE element) {
+    if (seq_list == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (index == NULL)
+        return TOYLIB_ERR_BAD_ARG_2;
+    if (seq_list->data_ == NULL)
+        return TOYLIB_ERR_EMPTY;
+
+    const size_t length = seq_list->length_;
+    const TOYLIB_SEQLIST_ELEMENT_TYPE* data = seq_list->data_;
+    *index = SIZE_MAX;
+
+    for (size_t i = 0; i < length; ++i) {
+        if (TOYLIB_SEQLIST_ELEMENT_IS_EQUAL(element, data[i])) {
+            *index = i;
+            break;
+        }
+    }
+
+    return TOYLIB_OK;
+}
+
 ToylibError seq_list_free(SeqList* seq_list) {
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
