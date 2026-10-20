@@ -64,7 +64,8 @@ ToylibError seq_list_delete(SeqList* seq_list, const size_t index, TOYLIB_SEQLIS
     TOYLIB_SEQLIST_ELEMENT_TYPE* data = seq_list->data_;
     const TOYLIB_SEQLIST_ELEMENT_TYPE element = data[index];
 
-    for (size_t i = index; i <= length; ++i) {
+    // 最后一个元素无需重新赋值
+    for (size_t i = index; i + 1 < length; ++i) {
         data[i] = data[i + 1];
     }
     seq_list->length_ -= 1;
