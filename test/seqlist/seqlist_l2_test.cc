@@ -277,14 +277,33 @@ TEST_CASE("free rejects a null list pointer") {
 }
 
 /**
- * 校验free字段复位之后重复调用是安全的
- * @note 第一次已经置空data_, 第二次等价于free(NULL), 属于合法空操作
+ * 校验未初始化的顺序表被调用时统一返回NOT_INITIALIZED
+ * @note 零初始化的SeqList, data_为空; 三个操作都应该明确拒绝, 而不是给出误导性的错误码
  */
-TEST_CASE("free can be called twice") {
+TEST_CASE("operations on an uninitialized list report not initialized") {
+    SeqList list{};
+
+    SUBCASE("insert") {
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_insert(&list, 0, 1));
+    }
+    SUBCASE("delete") {
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_delete(&list, 0, nullptr));
+    }
+    SUBCASE("find") {
+        size_t index = 99;
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_find(&list, &index, 1));
+    }
+}
+
+/**
+ * 校验free释放过之后再调用返回NOT_INITIALIZED
+ * @note 第一次释放后data_被置空, 第二次会被"未初始化"检查拦下
+ */
+TEST_CASE("free rejects a list that was already freed") {
     SeqList list = make_list(8, {1, 2, 3});
 
     CHECK_EQ(TOYLIB_OK, seq_list_free(&list));
-    CHECK_EQ(TOYLIB_OK, seq_list_free(&list));
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_free(&list));
 
     CHECK(list.data_ == nullptr);
     CHECK_EQ(list.capacity_, 0);
