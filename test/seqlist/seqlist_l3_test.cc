@@ -62,11 +62,19 @@ TEST_CASE("random operations match the model") {
     REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, kCapacity));
 
     for (int step = 0; step < kSteps; ++step) {
-        const int op = static_cast<int>(rng() % 3);
+        const int op = static_cast<int>(rng() % 5);
         const size_t index = pick_index(rng, model.size());
         const Element value = static_cast<Element>(rng() % 10);
 
-        const std::string op_name = op == 0 ? "insert" : (op == 1 ? "delete" : "find");
+        std::string op_name = "insert";
+        if (op == 1)
+            op_name = "delete";
+        else if (op == 2)
+            op_name = "find";
+        else if (op == 3)
+            op_name = "get";
+        else if (op == 4)
+            op_name = "set";
         CAPTURE(step);
         CAPTURE(op_name);
         CAPTURE(index);
@@ -102,7 +110,7 @@ TEST_CASE("random operations match the model") {
                 }
                 break;
             }
-            default: {
+            case 2: {
                 // find: 查不到时出参是哨兵
                 size_t found = 0;
                 CHECK_EQ(TOYLIB_OK, seq_list_find(&list, &found, value));
@@ -117,10 +125,33 @@ TEST_CASE("random operations match the model") {
                 CHECK_EQ(found, expected);
                 break;
             }
+            case 3: {
+                // get: 下标必须落在[0, length)
+                ToylibError expected = index >= model.size() ? TOYLIB_ERR_OUT_OF_RANGE : TOYLIB_OK;
+
+                Element got = 0;
+                CHECK_EQ(expected, seq_list_get(&list, index, &got));
+                if (expected == TOYLIB_OK)
+                    CHECK_EQ(got, model[index]);
+                break;
+            }
+            default: {
+                // set: 边界和get完全一样, 只是写而不是读
+                ToylibError expected = index >= model.size() ? TOYLIB_ERR_OUT_OF_RANGE : TOYLIB_OK;
+
+                CHECK_EQ(expected, seq_list_set(&list, index, value));
+                if (expected == TOYLIB_OK)
+                    model[index] = value;
+                break;
+            }
         }
 
         // 每一步之后全量比对, 跑偏了立刻停下来
         CHECK_EQ(to_vector(list), model);
+
+        size_t length = 0;
+        CHECK_EQ(TOYLIB_OK, seq_list_length(&list, &length));
+        CHECK_EQ(length, model.size());
     }
 
     seq_list_free(&list);

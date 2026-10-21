@@ -5,6 +5,7 @@
 #include "doctest/doctest.h"
 #include "seqlist_support.h"
 
+using toylib_test::Element;
 using toylib_test::make_list;
 
 TEST_SUITE_BEGIN("[SeqList][L1]");
@@ -189,6 +190,88 @@ TEST_CASE("find returns the first occurrence of a duplicated element") {
     CHECK_EQ(index, 1);
 
     seq_list_free(&list);
+}
+
+/**
+ * 校验get能按下标取出值, 从第一个到最后一个
+ * @note 契约: 返回OK, value出参是data_[index]; 读操作不能改动顺序表
+ */
+TEST_CASE("get returns the value at each index") {
+    SeqList list = make_list(8, {10, 20, 30});
+
+    Element value = 0;
+    CHECK_EQ(TOYLIB_OK, seq_list_get(&list, 0, &value));
+    CHECK_EQ(value, 10);
+    CHECK_EQ(TOYLIB_OK, seq_list_get(&list, 1, &value));
+    CHECK_EQ(value, 20);
+    CHECK_EQ(TOYLIB_OK, seq_list_get(&list, 2, &value));
+    CHECK_EQ(value, 30);
+
+    // 连读三次之后顺序表必须原样不动
+    CHECK_EQ(list.length_, 3);
+    CHECK_SEQ(list, 10, 20, 30);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验set能按下标改写值
+ * @note 契约: 只改data_[index], 长度不变
+ */
+TEST_CASE("set replaces the value at each index") {
+    SeqList list = make_list(8, {1, 2, 3});
+
+    CHECK_EQ(TOYLIB_OK, seq_list_set(&list, 0, 10));
+    CHECK_EQ(TOYLIB_OK, seq_list_set(&list, 1, 20));
+    CHECK_EQ(TOYLIB_OK, seq_list_set(&list, 2, 30));
+
+    CHECK_EQ(list.length_, 3);
+    CHECK_SEQ(list, 10, 20, 30);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验length返回元素个数, 并且跟着插入删除走
+ */
+TEST_CASE("length reports the element count") {
+    SeqList list = make_list(8, {});
+
+    size_t length = 99;
+    CHECK_EQ(TOYLIB_OK, seq_list_length(&list, &length));
+    CHECK_EQ(length, 0);
+
+    CHECK_EQ(TOYLIB_OK, seq_list_insert(&list, 0, 1));
+    CHECK_EQ(TOYLIB_OK, seq_list_insert(&list, 1, 2));
+    CHECK_EQ(TOYLIB_OK, seq_list_length(&list, &length));
+    CHECK_EQ(length, 2);
+
+    CHECK_EQ(TOYLIB_OK, seq_list_delete(&list, 0, nullptr));
+    CHECK_EQ(TOYLIB_OK, seq_list_length(&list, &length));
+    CHECK_EQ(length, 1);
+
+    seq_list_free(&list);
+}
+
+/**
+ * 校验capacity返回容量, create和init两种来源都要对
+ * @note 容量只在create/init时确定, 插入删除不会改变它
+ */
+TEST_CASE("capacity reports the allocated capacity") {
+    SeqList created = make_list(16, {1, 2, 3});
+
+    size_t capacity = 99;
+    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&created, &capacity));
+    CHECK_EQ(capacity, 16);
+
+    CHECK_EQ(TOYLIB_OK, seq_list_insert(&created, 3, 4));
+    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&created, &capacity));
+    CHECK_EQ(capacity, 16);
+    seq_list_free(&created);
+
+    int buffer[8] = {0};
+    SeqList borrowed{};
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&borrowed, buffer, 8));
+    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&borrowed, &capacity));
+    CHECK_EQ(capacity, 8);
 }
 
 TEST_SUITE_END();

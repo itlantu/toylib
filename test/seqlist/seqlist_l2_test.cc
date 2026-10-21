@@ -309,4 +309,137 @@ TEST_CASE("free rejects a list that was already freed") {
     CHECK_EQ(list.capacity_, 0);
 }
 
+/**
+ * 校验get拒绝非法参数: 顺序表为空指针报BAD_ARG_1, 出参为空指针报BAD_ARG_3
+ */
+TEST_CASE("get rejects invalid arguments") {
+    SUBCASE("null list pointer") {
+        Element value = 0;
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_get(nullptr, 0, &value));
+    }
+    SUBCASE("null out parameter") {
+        SeqList list = make_list(8, {1, 2, 3});
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_3, seq_list_get(&list, 0, nullptr));
+        seq_list_free(&list);
+    }
+}
+
+/**
+ * 校验空表取任何下标都越界
+ */
+TEST_CASE("get on an empty list reports out of range") {
+    SeqList list = make_list(4, {});
+
+    Element value = 99;
+    CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_get(&list, 0, &value));
+
+    CHECK_EQ(value, 99);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验取值下标的上界: 长度和SIZE_MAX都要拒绝
+ * @note 取值下标的合法区间是[0, length), 右端是开区间
+ */
+TEST_CASE("get rejects an index at or past the end") {
+    SeqList list = make_list(8, {1, 2, 3});
+
+    SUBCASE("index equals length") {
+        Element value = 99;
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_get(&list, 3, &value));
+        CHECK_EQ(value, 99);
+    }
+    SUBCASE("index is SIZE_MAX") {
+        Element value = 99;
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_get(&list, SIZE_MAX, &value));
+        CHECK_EQ(value, 99);
+    }
+
+    // 失败后内容不变
+    CHECK_SEQ(list, 1, 2, 3);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验未初始化的顺序表被取值时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("get on an uninitialized list reports not initialized") {
+    SeqList list{};
+
+    Element value = 99;
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_get(&list, 0, &value));
+}
+
+/**
+ * 校验set拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("set rejects a null list pointer") {
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_set(nullptr, 0, 1));
+}
+
+/**
+ * 校验空表改写任何下标都越界
+ */
+TEST_CASE("set on an empty list reports out of range") {
+    SeqList list = make_list(4, {});
+
+    CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_set(&list, 0, 1));
+
+    CHECK_EQ(list.length_, 0);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验改写下标的上界: 长度和SIZE_MAX都要拒绝
+ * @note 改写下标的合法区间是[0, length), 右端是开区间
+ */
+TEST_CASE("set rejects an index at or past the end") {
+    SeqList list = make_list(8, {1, 2, 3});
+
+    SUBCASE("index equals length") {
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_set(&list, 3, 9));
+    }
+    SUBCASE("index is SIZE_MAX") {
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, seq_list_set(&list, SIZE_MAX, 9));
+    }
+
+    // 失败后内容不变
+    CHECK_SEQ(list, 1, 2, 3);
+    seq_list_free(&list);
+}
+
+/**
+ * 校验未初始化的顺序表被改写时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("set on an uninitialized list reports not initialized") {
+    SeqList list{};
+
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, seq_list_set(&list, 0, 1));
+}
+
+/**
+ * 校验length和capacity拒绝非法参数
+ * @note 出参都是第二个参数, 所以空出参报BAD_ARG_2
+ */
+TEST_CASE("length and capacity reject invalid arguments") {
+    SeqList list = make_list(8, {1, 2, 3});
+
+    SUBCASE("length with a null list pointer") {
+        size_t length = 99;
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_length(nullptr, &length));
+    }
+    SUBCASE("length with a null out parameter") {
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_length(&list, nullptr));
+    }
+    SUBCASE("capacity with a null list pointer") {
+        size_t capacity = 99;
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_capacity(nullptr, &capacity));
+    }
+    SUBCASE("capacity with a null out parameter") {
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_capacity(&list, nullptr));
+    }
+
+    seq_list_free(&list);
+}
+
 TEST_SUITE_END();
