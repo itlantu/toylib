@@ -75,11 +75,26 @@ ToylibError dlist_free(DList* dlist);
  * 获取链表中指定下标的值
  * @param dlist 目标链表, 不为空指针
  * @param index 值下标
- * @param value 链表中对应下标的值
- * @return
+ * @param value 链表中对应下标的值, 不为空指针
+ * @return 成功或失败原因
  */
 ToylibError dlist_get(const DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value);
+
+/**
+ * 修改链表中指定下标的值
+ * @param dlist 目标链表, 不为空指针
+ * @param index 值下标
+ * @param value 修改值, 会覆盖原有的值
+ * @return 成功或失败原因
+ */
 ToylibError dlist_set(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE value);
+
+/**
+ * 获取链表长度
+ * @param dlist 目标链表, 不为空指针
+ * @param length 目标链表的长度, 不为空指针
+ * @return 成功或失败原因
+ */
 ToylibError dlist_length(const DList* dlist, size_t* length);
 
 #ifdef __cplusplus
