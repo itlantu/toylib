@@ -2,6 +2,30 @@
 
 #include <stdlib.h>
 
+static DListNode* dlist_index_node_(const DList* dlist, const size_t index) {
+    const DListNode* head = dlist->head_;
+    const DListNode* tail = dlist->tail_;
+    const size_t length = dlist->length_;
+
+    DListNode* p = head->next_;
+
+    if (index <= length / 2) {
+        // 下标离头指针近, 从头指针开始找
+        for (size_t i = 0; i < index; ++i) {
+            p = p->next_;
+        }
+        return p;
+    }
+    // 下标离尾指针近, 从尾指针开始往前找
+    p = tail->prev_;
+    for (size_t i = index + 1; i < length; ++i) {
+        p = p->prev_;
+    }
+
+    return p;
+}
+
+
 static DListNode* dlist_node_create(const TOYLIB_DLIST_VALUE_TYPE value, DListNode* prev, DListNode* next) {
     DListNode* result = (DListNode*)malloc(sizeof(DListNode));
     result->value_ = value;
@@ -134,16 +158,17 @@ ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE
     if (index >= dlist->length_)
         return TOYLIB_ERR_OUT_OF_RANGE;
 
-    DListNode* p = dlist->head_->next_;
-    for (size_t i = 0; i < index; ++i) {
-        p = p->next_;
-    }
+    // DListNode* p = dlist->head_->next_;
+    // for (size_t i = 0; i < index; ++i) {
+    //     p = p->next_;
+    // }
+    const DListNode* p = dlist_index_node_(dlist, index);
     *value = p->value_;
 
     return TOYLIB_OK;
 }
 
-ToylibError dlist_set(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE value){
+ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE value){
     if (dlist == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
@@ -151,10 +176,11 @@ ToylibError dlist_set(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE value)
     if (index >= dlist->length_)
         return TOYLIB_ERR_OUT_OF_RANGE;
 
-    DListNode* p = dlist->head_->next_;
-    for (size_t i = 0; i < index; ++i) {
-        p = p->next_;
-    }
+    // DListNode* p = dlist->head_->next_;
+    // for (size_t i = 0; i < index; ++i) {
+    //     p = p->next_;
+    // }
+    DListNode* p = dlist_index_node_(dlist, index);
     p->value_ = value;
     return TOYLIB_OK;
 }
