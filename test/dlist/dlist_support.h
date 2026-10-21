@@ -7,7 +7,6 @@
 #ifndef TOYLIB_TEST_DLIST_SUPPORT_H
 #define TOYLIB_TEST_DLIST_SUPPORT_H
 
-#include <cstdlib>
 #include <initializer_list>
 #include <vector>
 
@@ -46,7 +45,7 @@ inline std::vector<Value> to_values_reversed(const DList& dlist) {
 
 /**
  * 建一条空链表
- * @return 初始化好的链表, 用完需要free_nodes
+ * @return 初始化好的链表, 用完需要dlist_free
  * @note 内部不检查返回值, 只适合关心链表结构的用例
  */
 inline DList make_dlist() {
@@ -58,7 +57,7 @@ inline DList make_dlist() {
 /**
  * 建一条链表并按顺序填好初值
  * @param values 初始元素
- * @return 初始化好的链表, 用完需要free_nodes
+ * @return 初始化好的链表, 用完需要dlist_free
  * @note 插入位置取length_, 所以链表里的顺序就是传入顺序
  */
 inline DList make_dlist(const std::initializer_list<Value> values) {
@@ -66,24 +65,6 @@ inline DList make_dlist(const std::initializer_list<Value> values) {
     for (const Value value : values)
         dlist_insert(&dlist, dlist.length_, value);
     return dlist;
-}
-
-/**
- * 释放链表的所有节点, 包括头尾哨兵
- * @param dlist 目标链表
- * @note 临时兜底: dlist_free还没实现, 实现之后这个函数换掉
- */
-inline void free_nodes(DList& dlist) {
-    DListNode* node = dlist.head_;
-    while (node != nullptr) {
-        DListNode* next = node->next_;
-        std::free(node);
-        node = next;
-    }
-
-    dlist.head_ = nullptr;
-    dlist.tail_ = nullptr;
-    dlist.length_ = 0;
 }
 
 }  // namespace toylib_test
