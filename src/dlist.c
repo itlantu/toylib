@@ -142,3 +142,14 @@ ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE
 
     return TOYLIB_OK;
 }
+
+ToylibError dlist_length(const DList* dlist, size_t* length) {
+    if (dlist == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (length == NULL)
+        return TOYLIB_ERR_BAD_ARG_2;
+    if (dlist->head_ == NULL || dlist->tail_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+    *length = dlist->length_;
+    return TOYLIB_OK;
+}
