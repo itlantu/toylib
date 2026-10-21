@@ -117,11 +117,9 @@ ToylibError dlist_free(DList* dlist) {
         free(p);
         p = next;
     }
+    dlist->head_ = NULL;
+    dlist->tail_ = NULL;
     dlist->length_ = 0;
 
     return TOYLIB_OK;
-}
-
-ToylibError dlist_get(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value) {
-
 }
