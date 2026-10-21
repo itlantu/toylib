@@ -123,3 +123,22 @@ ToylibError dlist_free(DList* dlist) {
 
     return TOYLIB_OK;
 }
+
+ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE* value) {
+    if (dlist == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (value == NULL)
+        return TOYLIB_ERR_BAD_ARG_3;
+    if (dlist->head_ == NULL || dlist->tail_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+    if (index >= dlist->length_)
+        return TOYLIB_ERR_OUT_OF_RANGE;
+
+    DListNode* p = dlist->head_->next_;
+    for (size_t i = 0; i < index; ++i) {
+        p = p->next_;
+    }
+    *value = p->value_;
+
+    return TOYLIB_OK;
+}
