@@ -26,7 +26,7 @@ TEST_CASE("create allocates memory and leaves the list empty") {
 
 /**
  * 校验create接受合法的最小容量 1
- * @note 容量是闭区间[1, MAX_CAPACITY], 只有0才算非法
+ * @note 容量下界封闭: 1是合法的最小值, 0才算非法
  */
 TEST_CASE("create accepts the minimal capacity of 1") {
     SeqList list{};
@@ -58,7 +58,7 @@ TEST_CASE("init borrows the caller array and leaves the list empty") {
 
 /**
  * 校验free释放内存后把三个字段都清零
- * @note 字段复位之后重复调用才是安全的, 见 L2 的 free can be called twice
+ * @note 字段复位之后才能被未初始化检查识别, 见L2的free rejects a list that was already freed
  */
 TEST_CASE("free releases memory and resets the fields") {
     SeqList list{};

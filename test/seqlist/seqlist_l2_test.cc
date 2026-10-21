@@ -194,7 +194,7 @@ TEST_CASE("delete the last element of a full list") {
 
 /**
  * 校验delete不会写到容量之外
- * @note 用init借用一段后面带哨兵的数组, 越界写会覆盖哨兵, 比malloc/free导致堆栈溢出稳定
+ * @note 用init借用一段后面带哨兵的数组, 越界写会踩坏哨兵, 比等malloc/free报堆损坏稳定
  */
 TEST_CASE("delete never writes past the capacity") {
     // 哨兵值不能相同, 否则越界复制可能把同一个值搬回来, 反而看不出来
