@@ -281,4 +281,44 @@ TEST_CASE("get returns the value at each index") {
     dlist_free(&dlist);
 }
 
+/**
+ * 校验set能按下标改写值, 从第一个到最后一个
+ * @note 契约: 只改节点的value_, 不动链表结构, 长度和前后链都不变
+ */
+TEST_CASE("set replaces the value at each index") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_OK, dlist_set(&dlist, 0, 10));
+    CHECK_EQ(TOYLIB_OK, dlist_set(&dlist, 1, 20));
+    CHECK_EQ(TOYLIB_OK, dlist_set(&dlist, 2, 30));
+
+    CHECK_EQ(dlist.length_, 3);
+    CHECK_DLIST(dlist, 10, 20, 30);
+    CHECK_EQ(to_values_reversed(dlist), (std::vector<Value>{30, 20, 10}));
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验length返回真实节点个数, 并且跟着增删走
+ * @note 空表是0, 插入后增加, 删除后减少
+ */
+TEST_CASE("length reports the number of nodes") {
+    DList dlist = make_dlist();
+
+    size_t length = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_length(&dlist, &length));
+    CHECK_EQ(length, 0);
+
+    CHECK_EQ(TOYLIB_OK, dlist_insert(&dlist, 0, 1));
+    CHECK_EQ(TOYLIB_OK, dlist_insert(&dlist, 1, 2));
+    CHECK_EQ(TOYLIB_OK, dlist_length(&dlist, &length));
+    CHECK_EQ(length, 2);
+
+    CHECK_EQ(TOYLIB_OK, dlist_delete(&dlist, 0, nullptr));
+    CHECK_EQ(TOYLIB_OK, dlist_length(&dlist, &length));
+    CHECK_EQ(length, 1);
+
+    dlist_free(&dlist);
+}
+
 TEST_SUITE_END();

@@ -256,4 +256,80 @@ TEST_CASE("get on an uninitialized list reports not initialized") {
     CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_get(&dlist, 0, &value));
 }
 
+/**
+ * 校验set拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("set rejects a null list pointer") {
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_set(nullptr, 0, 1));
+}
+
+/**
+ * 校验未初始化的链表被改写时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("set on an uninitialized list reports not initialized") {
+    DList dlist{};
+
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_set(&dlist, 0, 1));
+}
+
+/**
+ * 校验空链表改写任何下标都越界
+ */
+TEST_CASE("set on an empty list reports out of range") {
+    DList dlist = make_dlist();
+
+    CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_set(&dlist, 0, 1));
+    CHECK_EQ(dlist.length_, 0);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验改写下标的上界: 长度和SIZE_MAX都要拒绝
+ * @note 改写下标的合法区间是[0, length), 右端是开区间
+ */
+TEST_CASE("set rejects an index at or past the end") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    SUBCASE("index equals length") {
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_set(&dlist, 3, 9));
+    }
+    SUBCASE("index is SIZE_MAX") {
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_set(&dlist, SIZE_MAX, 9));
+    }
+
+    // 失败后链表结构和内容都不变
+    CHECK_EQ(dlist.length_, 3);
+    CHECK_DLIST(dlist, 1, 2, 3);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验length拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("length rejects a null list pointer") {
+    size_t length = 99;
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_length(nullptr, &length));
+}
+
+/**
+ * 校验length拒绝空的出参, 返回BAD_ARG_2
+ * @note length是第二个参数, 没地方写结果就没法返回
+ */
+TEST_CASE("length rejects a null out parameter") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, dlist_length(&dlist, nullptr));
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验未初始化的链表被取长度时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("length on an uninitialized list reports not initialized") {
+    DList dlist{};
+
+    size_t length = 99;
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_length(&dlist, &length));
+}
+
 TEST_SUITE_END();
