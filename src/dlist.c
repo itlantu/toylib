@@ -25,7 +25,6 @@ static DListNode* dlist_index_node_(const DList* dlist, const size_t index) {
     return p;
 }
 
-
 static DListNode* dlist_node_create(const TOYLIB_DLIST_VALUE_TYPE value, DListNode* prev, DListNode* next) {
     DListNode* result = (DListNode*)malloc(sizeof(DListNode));
     result->value_ = value;
@@ -168,7 +167,7 @@ ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE
     return TOYLIB_OK;
 }
 
-ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE value){
+ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE value) {
     if (dlist == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
