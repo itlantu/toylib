@@ -58,16 +58,29 @@ ToylibError dlist_delete(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* de
 /**
  * 在链表中查找指定值的位置
  * @param dlist 目标链表, 不为空指针
- * @param index 元素下标, 如果顺序表找不到对应的元素则赋值为TOYLIB_DLIST_VALUE_NOT_FOUND
+ * @param index 值下标, 如果顺序表找不到对应的元素则赋值为TOYLIB_DLIST_VALUE_NOT_FOUND
  * @param value 查找值
  * @return 成功或失败原因
  */
 ToylibError dlist_find(const DList* dlist, size_t* index, TOYLIB_DLIST_VALUE_TYPE value);
+
+/**
+ * 释放链表分配的内存, 包括头指针(head_)和尾指针(tail_), 两指针置为空指针, 同时length_置为0
+ * @param dlist 目标链表, 不为空指针
+ * @return 成功或失败原因
+ */
 ToylibError dlist_free(DList* dlist);
 
-ToylibError dlist_get(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value);
+/**
+ * 获取链表中指定下标的值
+ * @param dlist 目标链表, 不为空指针
+ * @param index 值下标
+ * @param value 链表中对应下标的值
+ * @return
+ */
+ToylibError dlist_get(const DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value);
 ToylibError dlist_set(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE value);
-ToylibError dlist_length(DList* dlist, size_t* length);
+ToylibError dlist_length(const DList* dlist, size_t* length);
 
 #ifdef __cplusplus
 }
