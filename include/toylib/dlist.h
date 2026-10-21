@@ -14,6 +14,10 @@ extern "C" {
 #define TOYLIB_DLIST_VALUE_TYPE int
 #endif  // TOYLIB_DLIST_VALUE_TYPE
 
+#ifndef TOYLIB_DLIST_VALUE_NOT_FOUND
+#define TOYLIB_DLIST_VALUE_NOT_FOUND SIZE_MAX
+#endif  // TOYLIB_DLIST_VALUE_NOT_FOUND
+
 typedef struct DListNode {
     struct DListNode* prev_;
     struct DListNode* next_;
@@ -50,7 +54,15 @@ ToylibError dlist_insert(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE val
  * @return 成功或失败原因
  */
 ToylibError dlist_delete(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* deleted_value);
-ToylibError dlist_find(DList* dlist, size_t* index, TOYLIB_DLIST_VALUE_TYPE value);
+
+/**
+ * 在链表中查找指定值的位置
+ * @param dlist 目标链表, 不为空指针
+ * @param index 元素下标, 如果顺序表找不到对应的元素则赋值为TOYLIB_DLIST_VALUE_NOT_FOUND
+ * @param value 查找值
+ * @return 成功或失败原因
+ */
+ToylibError dlist_find(const DList* dlist, size_t* index, TOYLIB_DLIST_VALUE_TYPE value);
 ToylibError dlist_free(DList* dlist);
 
 ToylibError dlist_get(DList* dlist, size_t index, TOYLIB_DLIST_VALUE_TYPE* value);
