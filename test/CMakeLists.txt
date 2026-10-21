@@ -12,6 +12,12 @@ toylib_add_test(NAME "SeqList"
     TIMEOUT     60
 )
 
+toylib_add_test(NAME "SeqList"
+    LEVEL       3
+    SOURCES     "seqlist/seqlist_l3_test.cc"
+    TIMEOUT     60
+)
+
 toylib_add_test(NAME "DList"
     LEVEL       1
     SOURCES     "dlist/dlist_l1_test.cc"
@@ -22,4 +28,10 @@ toylib_add_test(NAME "DList"
     LEVEL       2
     SOURCES     "dlist/dlist_l2_test.cc"
     TIMEOUT     30
+)
+
+toylib_add_test(NAME "DList"
+    LEVEL       3
+    SOURCES     "dlist/dlist_l3_test.cc"
+    TIMEOUT     60
 )
