@@ -7,7 +7,6 @@
 #include "dlist_support.h"
 #include "doctest/doctest.h"
 
-using toylib_test::free_nodes;
 using toylib_test::make_dlist;
 using toylib_test::Value;
 
@@ -45,7 +44,7 @@ TEST_CASE("insert rejects an index past the end") {
     CHECK_EQ(dlist.length_, 0);
     CHECK(dlist.head_->next_ == dlist.tail_);
     CHECK(dlist.tail_->prev_ == dlist.head_);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -84,7 +83,7 @@ TEST_CASE("delete on an empty list reports empty") {
     CHECK_EQ(TOYLIB_ERR_EMPTY, dlist_delete(&dlist, 0, &removed));
 
     CHECK_EQ(dlist.length_, 0);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -104,7 +103,157 @@ TEST_CASE("delete rejects an index at or past the end") {
     // 失败后链表结构和内容都不变
     CHECK_EQ(dlist.length_, 3);
     CHECK_DLIST(dlist, 1, 2, 3);
-    free_nodes(dlist);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验find拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("find rejects a null list pointer") {
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_find(nullptr, &index, 1));
+}
+
+/**
+ * 校验find拒绝空的出参, 返回BAD_ARG_2
+ * @note 没地方写下标就没法带回结果, 属于调用方的错误
+ */
+TEST_CASE("find rejects a null index out parameter") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, dlist_find(&dlist, nullptr, 2));
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验空链表里查不到任何值
+ * @note 查不到时index出参写成哨兵值TOYLIB_DLIST_VALUE_NOT_FOUND
+ */
+TEST_CASE("find on an empty list reports not found") {
+    DList dlist = make_dlist();
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 1));
+
+    CHECK_EQ(index, TOYLIB_DLIST_VALUE_NOT_FOUND);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验查不到时index出参写成哨兵值, 而不是留着调用方的原值
+ * @note 不写的话调用方分不清"没找到"和"找到下标0"
+ */
+TEST_CASE("find reports not found by writing the sentinel") {
+    DList dlist = make_dlist({10, 20, 30});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 42));
+
+    CHECK_EQ(index, TOYLIB_DLIST_VALUE_NOT_FOUND);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验未初始化的链表被查找时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("find on an uninitialized list reports not initialized") {
+    DList dlist{};
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_find(&dlist, &index, 1));
+}
+
+/**
+ * 校验free拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("free rejects a null list pointer") {
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_free(nullptr));
+}
+
+/**
+ * 校验未初始化的链表被释放时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("free on an uninitialized list reports not initialized") {
+    DList dlist{};
+
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_free(&dlist));
+}
+
+/**
+ * 校验释放过之后再调用返回NOT_INITIALIZED
+ * @note 与seq_list_free一致: 第一次释放后字段要复位, 第二次才能被拦住
+ */
+TEST_CASE("free can be called twice") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_OK, dlist_free(&dlist));
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_free(&dlist));
+}
+
+/**
+ * 校验get拒绝空指针, 返回BAD_ARG_1
+ */
+TEST_CASE("get rejects a null list pointer") {
+    Value value = 0;
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_get(nullptr, 0, &value));
+}
+
+/**
+ * 校验get拒绝空的出参, 返回BAD_ARG_3
+ * @note value是第三个参数, 所以是BAD_ARG_3; 没地方写结果就没法返回
+ */
+TEST_CASE("get rejects a null out parameter") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_3, dlist_get(&dlist, 0, nullptr));
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验空链表取任何下标都越界
+ */
+TEST_CASE("get on an empty list reports out of range") {
+    DList dlist = make_dlist();
+
+    Value value = 99;
+    CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_get(&dlist, 0, &value));
+
+    CHECK_EQ(value, 99);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验取值下标的上界: 长度和SIZE_MAX都要拒绝
+ * @note 取值下标的合法区间是[0, length), 右端是开区间
+ */
+TEST_CASE("get rejects an index at or past the end") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    SUBCASE("index equals length") {
+        Value value = 99;
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_get(&dlist, 3, &value));
+        CHECK_EQ(value, 99);
+    }
+    SUBCASE("index is SIZE_MAX") {
+        Value value = 99;
+        CHECK_EQ(TOYLIB_ERR_OUT_OF_RANGE, dlist_get(&dlist, SIZE_MAX, &value));
+        CHECK_EQ(value, 99);
+    }
+
+    // 失败后链表结构和内容都不变
+    CHECK_EQ(dlist.length_, 3);
+    CHECK_DLIST(dlist, 1, 2, 3);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验未初始化的链表被取值时明确返回NOT_INITIALIZED
+ */
+TEST_CASE("get on an uninitialized list reports not initialized") {
+    DList dlist{};
+
+    Value value = 99;
+    CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, dlist_get(&dlist, 0, &value));
 }
 
 TEST_SUITE_END();
