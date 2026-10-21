@@ -103,3 +103,20 @@ ToylibError dlist_find(const DList* dlist, size_t* index, const TOYLIB_DLIST_VAL
     }
     return TOYLIB_OK;
 }
+
+ToylibError dlist_free(DList* dlist) {
+    if (dlist == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (dlist->head_ == NULL || dlist->tail_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+
+    DListNode* p = dlist->head_;
+
+    while (p != NULL) {
+        DListNode* next = p->next_;
+        free(p);
+        p = next;
+    }
+
+    return TOYLIB_OK;
+}
