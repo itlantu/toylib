@@ -81,3 +81,25 @@ ToylibError dlist_delete(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TY
 
     return TOYLIB_OK;
 }
+
+ToylibError dlist_find(const DList* dlist, size_t* index, const TOYLIB_DLIST_VALUE_TYPE value) {
+    if (dlist == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (index == NULL)
+        return TOYLIB_ERR_BAD_ARG_2;
+    if (dlist->head_ == NULL || dlist->tail_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+
+    DListNode* p = dlist->head_->next_;
+    const DListNode* tail = dlist->tail_;
+    *index = TOYLIB_DLIST_VALUE_NOT_FOUND;
+
+    for (size_t i = 0; p != tail; ++i) {
+        if (p->value_ == value) {
+            *index = i;
+            break;
+        }
+        p = p->next_;
+    }
+    return TOYLIB_OK;
+}
