@@ -5,7 +5,6 @@
 #include "dlist_support.h"
 #include "doctest/doctest.h"
 
-using toylib_test::free_nodes;
 using toylib_test::make_dlist;
 using toylib_test::to_values_reversed;
 using toylib_test::Value;
@@ -27,7 +26,7 @@ TEST_CASE("init creates an empty list") {
     CHECK(dlist.head_->next_ == dlist.tail_);
     CHECK(dlist.tail_->prev_ == dlist.head_);
 
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -39,7 +38,7 @@ TEST_CASE("init leaves the sentinels unlinked outward") {
     CHECK(dlist.head_->prev_ == nullptr);
     CHECK(dlist.tail_->next_ == nullptr);
 
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -53,7 +52,7 @@ TEST_CASE("insert at index 0 into an empty list") {
 
     CHECK_EQ(dlist.length_, 1);
     CHECK_DLIST(dlist, 42);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -68,7 +67,7 @@ TEST_CASE("insert at index equal to length appends") {
 
     CHECK_EQ(dlist.length_, 2);
     CHECK_DLIST(dlist, 1, 2);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -83,7 +82,7 @@ TEST_CASE("insert in the middle keeps the order") {
 
     CHECK_EQ(dlist.length_, 3);
     CHECK_DLIST(dlist, 1, 2, 3);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -98,7 +97,7 @@ TEST_CASE("insert keeps both directions consistent") {
     CHECK_EQ(TOYLIB_OK, dlist_insert(&dlist, 2, 3));
 
     CHECK_EQ(to_values_reversed(dlist), (std::vector<Value>{3, 2, 1}));
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -114,7 +113,7 @@ TEST_CASE("delete at index 0 removes the first element") {
     CHECK_EQ(removed, 1);
     CHECK_EQ(dlist.length_, 2);
     CHECK_DLIST(dlist, 2, 3);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -129,7 +128,7 @@ TEST_CASE("delete in the middle keeps the order") {
     CHECK_EQ(removed, 2);
     CHECK_EQ(dlist.length_, 2);
     CHECK_DLIST(dlist, 1, 3);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -145,7 +144,7 @@ TEST_CASE("delete the last element") {
     CHECK_EQ(removed, 3);
     CHECK_EQ(dlist.length_, 2);
     CHECK_DLIST(dlist, 1, 2);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -158,7 +157,7 @@ TEST_CASE("delete accepts a null out parameter") {
 
     CHECK_EQ(dlist.length_, 2);
     CHECK_DLIST(dlist, 2, 3);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -176,7 +175,7 @@ TEST_CASE("delete all elements one by one leaves an empty list") {
     CHECK_EQ(dlist.length_, 0);
     CHECK(dlist.head_->next_ == dlist.tail_);
     CHECK(dlist.tail_->prev_ == dlist.head_);
-    free_nodes(dlist);
+    dlist_free(&dlist);
 }
 
 /**
@@ -189,7 +188,97 @@ TEST_CASE("delete keeps both directions consistent") {
     CHECK_EQ(TOYLIB_OK, dlist_delete(&dlist, 1, &removed));
 
     CHECK_EQ(to_values_reversed(dlist), (std::vector<Value>{4, 3, 1}));
-    free_nodes(dlist);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验find能定位到链表中间的值
+ * @note 契约: 返回OK, index出参是值在链表中的下标
+ */
+TEST_CASE("find returns the index of a value") {
+    DList dlist = make_dlist({10, 20, 30, 40});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 30));
+
+    CHECK_EQ(index, 2);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验find能定位到首个元素
+ * @note 下标0是查找结果的下界, 不能和"没找到"混淆
+ */
+TEST_CASE("find locates the first element") {
+    DList dlist = make_dlist({10, 20, 30});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 10));
+
+    CHECK_EQ(index, 0);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验find能定位到末尾元素
+ * @note 下标length-1是查找结果的上界
+ */
+TEST_CASE("find locates the last element") {
+    DList dlist = make_dlist({10, 20, 30});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 30));
+
+    CHECK_EQ(index, 2);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验值重复出现时返回第一次出现的下标
+ */
+TEST_CASE("find returns the first occurrence of a duplicated value") {
+    DList dlist = make_dlist({5, 7, 7, 9});
+
+    size_t index = 99;
+    CHECK_EQ(TOYLIB_OK, dlist_find(&dlist, &index, 7));
+
+    CHECK_EQ(index, 1);
+    dlist_free(&dlist);
+}
+
+/**
+ * 校验free之后链表回到干净状态
+ * @note 三个字段都要复位, 否则链表里留着悬空指针, 再调用就是释放后使用
+ */
+TEST_CASE("free resets the list") {
+    DList dlist = make_dlist({1, 2, 3});
+
+    CHECK_EQ(TOYLIB_OK, dlist_free(&dlist));
+
+    CHECK(dlist.head_ == nullptr);
+    CHECK(dlist.tail_ == nullptr);
+    CHECK_EQ(dlist.length_, 0);
+}
+
+/**
+ * 校验get能按下标取出值, 从第一个到最后一个
+ * @note 契约: 返回OK, value出参是被取出节点的值; 读操作不能改动链表本身
+ */
+TEST_CASE("get returns the value at each index") {
+    DList dlist = make_dlist({10, 20, 30});
+
+    Value value = 0;
+    CHECK_EQ(TOYLIB_OK, dlist_get(&dlist, 0, &value));
+    CHECK_EQ(value, 10);
+    CHECK_EQ(TOYLIB_OK, dlist_get(&dlist, 1, &value));
+    CHECK_EQ(value, 20);
+    CHECK_EQ(TOYLIB_OK, dlist_get(&dlist, 2, &value));
+    CHECK_EQ(value, 30);
+
+    // 连读三次之后链表必须原样不动
+    CHECK_EQ(dlist.length_, 3);
+    CHECK_DLIST(dlist, 10, 20, 30);
+    dlist_free(&dlist);
 }
 
 TEST_SUITE_END();
