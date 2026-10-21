@@ -88,6 +88,40 @@ ToylibError seq_list_find(const SeqList* seq_list, size_t* index, TOYLIB_SEQLIST
  */
 ToylibError seq_list_free(SeqList* seq_list);
 
+/**
+ * 获取顺序表中指定下标的值
+ * @param seq_list 目标顺序表, 不为空指针
+ * @param index 值下标
+ * @param value 顺序表中对应下标的元素, 不为空指针
+ * @return 成功或失败原因
+ */
+ToylibError seq_list_get(const SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE* value);
+
+/**
+ * 修改顺序表中指定下标的值
+ * @param seq_list 目标顺序表, 不为空指针
+ * @param index 值下标
+ * @param value 修改元素, 会覆盖原有的值
+ * @return 成功或失败原因
+ */
+ToylibError seq_list_set(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE value);
+
+/**
+ * 获取顺序表长度
+ * @param seq_list 目标顺序表, 不为空指针
+ * @param length 目标顺序表的长度, 不为空指针
+ * @return 成功或失败原因
+ */
+ToylibError seq_list_length(const SeqList* seq_list, size_t* length);
+
+/**
+ * 获取顺序表的容量
+ * @param seq_list 目标顺序表, 不为空指针
+ * @param capacity 目标顺序表的容量, 不为空指针
+ * @return 成功或失败原因
+ */
+ToylibError seq_list_capacity(const SeqList* seq_list, size_t* capacity);
+
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
