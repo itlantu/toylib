@@ -95,7 +95,7 @@ ToylibError dlist_find(const DList* dlist, size_t* index, const TOYLIB_DLIST_VAL
     *index = TOYLIB_DLIST_VALUE_NOT_FOUND;
 
     for (size_t i = 0; p != tail; ++i) {
-        if (p->value_ == value) {
+        if (TOYLIB_DLIST_VALUE_IS_EQUAL(p->value_, value)) {
             *index = i;
             break;
         }
