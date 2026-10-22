@@ -65,6 +65,7 @@ ToylibError stack_free(Stack* stack) {
     free(stack->data_);
     stack->length_ = 0;
     stack->capacity_ = 0;
+    stack->data_ = NULL;
     return TOYLIB_OK;
 }
 
