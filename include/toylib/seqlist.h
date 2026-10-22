@@ -60,7 +60,7 @@ ToylibError seq_list_init(SeqList* seq_list, TOYLIB_SEQLIST_ELEMENT_TYPE* data, 
  * @param element 插入的元素
  * @return 成功或失败原因
  */
-ToylibError seq_list_insert(SeqList* seq_list, size_t index, TOYLIB_SEQLIST_ELEMENT_TYPE element);
+ToylibError seq_list_insert(SeqList* seq_list, size_t index, const TOYLIB_SEQLIST_ELEMENT_TYPE element);
 
 /**
  * 在顺序表中删除指定位置的元素
