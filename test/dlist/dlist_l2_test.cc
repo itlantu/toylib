@@ -16,14 +16,14 @@ TEST_SUITE_BEGIN("[DList][L2]");
  * 校验init拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("init rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_init(nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_init(nullptr));
 }
 
 /**
  * 校验insert拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("insert rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_insert(nullptr, 0, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_insert(nullptr, 0, 1));
 }
 
 /**
@@ -60,7 +60,7 @@ TEST_CASE("insert on an uninitialized list reports not initialized") {
  * 校验delete拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("delete rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_delete(nullptr, 0, nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_delete(nullptr, 0, nullptr));
 }
 
 /**
@@ -111,7 +111,7 @@ TEST_CASE("delete rejects an index at or past the end") {
  */
 TEST_CASE("find rejects a null list pointer") {
     size_t index = 99;
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_find(nullptr, &index, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_find(nullptr, &index, 1));
 }
 
 /**
@@ -121,7 +121,7 @@ TEST_CASE("find rejects a null list pointer") {
 TEST_CASE("find rejects a null index out parameter") {
     DList dlist = make_dlist({1, 2, 3});
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, dlist_find(&dlist, nullptr, 2));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_find(&dlist, nullptr, 2));
     dlist_free(&dlist);
 }
 
@@ -167,7 +167,7 @@ TEST_CASE("find on an uninitialized list reports not initialized") {
  * 校验free拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("free rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_free(nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_free(nullptr));
 }
 
 /**
@@ -195,17 +195,17 @@ TEST_CASE("free can be called twice") {
  */
 TEST_CASE("get rejects a null list pointer") {
     Value value = 0;
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_get(nullptr, 0, &value));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_get(nullptr, 0, &value));
 }
 
 /**
- * 校验get拒绝空的出参, 返回BAD_ARG_3
- * @note value是第三个参数, 所以是BAD_ARG_3; 没地方写结果就没法返回
+ * 校验get拒绝空的出参, 返回参数空指针错误
+ * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
 TEST_CASE("get rejects a null out parameter") {
     DList dlist = make_dlist({1, 2, 3});
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_3, dlist_get(&dlist, 0, nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_get(&dlist, 0, nullptr));
     dlist_free(&dlist);
 }
 
@@ -260,7 +260,7 @@ TEST_CASE("get on an uninitialized list reports not initialized") {
  * 校验set拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("set rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_set(nullptr, 0, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_set(nullptr, 0, 1));
 }
 
 /**
@@ -308,17 +308,17 @@ TEST_CASE("set rejects an index at or past the end") {
  */
 TEST_CASE("length rejects a null list pointer") {
     size_t length = 99;
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, dlist_length(nullptr, &length));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_length(nullptr, &length));
 }
 
 /**
- * 校验length拒绝空的出参, 返回BAD_ARG_2
- * @note length是第二个参数, 没地方写结果就没法返回
+ * 校验length拒绝空的出参, 返回参数空指针错误
+ * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
 TEST_CASE("length rejects a null out parameter") {
     DList dlist = make_dlist({1, 2, 3});
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, dlist_length(&dlist, nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, dlist_length(&dlist, nullptr));
     dlist_free(&dlist);
 }
 

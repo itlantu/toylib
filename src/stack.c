@@ -4,9 +4,9 @@
 
 ToylibError stack_init(Stack* stack, const size_t capacity) {
     if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (capacity == 0 || capacity > TOYLIB_STACK_MAX_CAPACITY)
-        return TOYLIB_ERR_BAD_ARG_2;
+        return TOYLIB_ERR_BAD_ARG_VALUE;
 
     TOYLIB_STACK_VALUE_TYPE* data = malloc(sizeof(TOYLIB_STACK_VALUE_TYPE) * capacity);
     if (data == NULL)
@@ -20,7 +20,7 @@ ToylibError stack_init(Stack* stack, const size_t capacity) {
 
 ToylibError stack_push(Stack* stack, const TOYLIB_STACK_VALUE_TYPE value) {
     if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (stack->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
 
@@ -35,7 +35,7 @@ ToylibError stack_push(Stack* stack, const TOYLIB_STACK_VALUE_TYPE value) {
 
 ToylibError stack_pop(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
     if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (stack->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (!stack->length_)
@@ -49,10 +49,8 @@ ToylibError stack_pop(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
 }
 
 ToylibError stack_top(const Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
-    if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
-    if (value == NULL)
-        return TOYLIB_ERR_BAD_ARG_2;
+    if (stack == NULL || value == NULL)
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (stack->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (!stack->length_)
@@ -64,7 +62,7 @@ ToylibError stack_top(const Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
 
 ToylibError stack_free(Stack* stack) {
     if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (stack->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
 
@@ -76,11 +74,8 @@ ToylibError stack_free(Stack* stack) {
 }
 
 ToylibError stack_length(const Stack* stack, size_t* length) {
-    if (stack == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
-    if (length == NULL)
-        return TOYLIB_ERR_BAD_ARG_2;
-
+    if (stack == NULL || length == NULL)
+        return TOYLIB_ERR_BAD_ARG_NULL;
     *length = stack->length_;
     return TOYLIB_OK;
 }

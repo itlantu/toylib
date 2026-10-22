@@ -1,7 +1,7 @@
 /*
  * L2边界级, 覆盖参数校验、容量与下标的边界值, 并验证操作失败后状态不变
  * 约定:
- *  - 某个参数非法时返回对应的 BAD_ARG_n, n 是该参数的位置
+ *  - 参数为空指针返回 BAD_ARG_NULL, 参数值非法返回 BAD_ARG_VALUE
  *  - insert 同时不满足下标和容量时, 先报下标错误
  *  - 任何失败都不能改动 length_ / capacity_ / 已有元素
  */
@@ -20,11 +20,11 @@ using toylib_test::to_vector;
 TEST_SUITE_BEGIN("[SeqList][L2]");
 
 /**
- * 校验create拒绝空指针, 返回第一个参数错误
+ * 校验create拒绝空指针, 返回参数空指针错误
  * @note 空指针检查必须是函数入口的第一件事, 不能先解引用
  */
 TEST_CASE("create rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_create(nullptr, 8));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_create(nullptr, 8));
 }
 
 /**
@@ -33,13 +33,13 @@ TEST_CASE("create rejects a null list pointer") {
  */
 TEST_CASE("create rejects an invalid capacity") {
     SUBCASE("capacity is zero") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_2, 0);
+        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, 0);
     }
     SUBCASE("capacity is max plus one") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_2, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
+        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
     }
     SUBCASE("capacity is SIZE_MAX") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_2, SIZE_MAX);
+        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, SIZE_MAX);
     }
 }
 
@@ -57,23 +57,23 @@ TEST_CASE("create accepts the maximum capacity") {
 }
 
 /**
- * 校验init逐个参数的非法取值都返回对应的BAD_ARG_n
+ * 校验init对每个非法参数返回对应的错误码
  */
 TEST_CASE("init rejects invalid arguments") {
     int buffer[4] = {1, 2, 3, 4};
     SeqList list{};
 
     SUBCASE("null list pointer") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_1, nullptr, buffer, 4);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_NULL, nullptr, buffer, 4);
     }
     SUBCASE("null data pointer") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_2, &list, nullptr, 4);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_NULL, &list, nullptr, 4);
     }
     SUBCASE("capacity is zero") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_3, &list, buffer, 0);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, &list, buffer, 0);
     }
     SUBCASE("capacity is above the limit") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_3, &list, buffer, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, &list, buffer, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
     }
 }
 
@@ -81,7 +81,7 @@ TEST_CASE("init rejects invalid arguments") {
  * 校验insert拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("insert rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_insert(nullptr, 0, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_insert(nullptr, 0, 1));
 }
 
 /**
@@ -127,7 +127,7 @@ TEST_CASE("insert on a full list reports the right error") {
  * 校验delete拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("delete rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_delete(nullptr, 0, nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_delete(nullptr, 0, nullptr));
 }
 
 /**
@@ -227,7 +227,7 @@ TEST_CASE("delete never writes past the capacity") {
  */
 TEST_CASE("find rejects a null list pointer") {
     size_t index = 0;
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_find(nullptr, &index, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_find(nullptr, &index, 1));
 }
 
 /**
@@ -237,7 +237,7 @@ TEST_CASE("find rejects a null list pointer") {
 TEST_CASE("find rejects a null index out parameter") {
     SeqList list = make_list(8, {1, 2, 3});
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_find(&list, nullptr, 2));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_find(&list, nullptr, 2));
     seq_list_free(&list);
 }
 
@@ -273,7 +273,7 @@ TEST_CASE("find reports not found by writing the sentinel into the index") {
  * 校验free拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("free rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_free(nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_free(nullptr));
 }
 
 /**
@@ -315,11 +315,11 @@ TEST_CASE("free rejects a list that was already freed") {
 TEST_CASE("get rejects invalid arguments") {
     SUBCASE("null list pointer") {
         Element value = 0;
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_get(nullptr, 0, &value));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_get(nullptr, 0, &value));
     }
     SUBCASE("null out parameter") {
         SeqList list = make_list(8, {1, 2, 3});
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_3, seq_list_get(&list, 0, nullptr));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_get(&list, 0, nullptr));
         seq_list_free(&list);
     }
 }
@@ -374,7 +374,7 @@ TEST_CASE("get on an uninitialized list reports not initialized") {
  * 校验set拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("set rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_set(nullptr, 0, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_set(nullptr, 0, 1));
 }
 
 /**
@@ -419,24 +419,24 @@ TEST_CASE("set on an uninitialized list reports not initialized") {
 
 /**
  * 校验length和capacity拒绝非法参数
- * @note 出参都是第二个参数, 所以空出参报BAD_ARG_2
+ * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
 TEST_CASE("length and capacity reject invalid arguments") {
     SeqList list = make_list(8, {1, 2, 3});
 
     SUBCASE("length with a null list pointer") {
         size_t length = 99;
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_length(nullptr, &length));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_length(nullptr, &length));
     }
     SUBCASE("length with a null out parameter") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_length(&list, nullptr));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_length(&list, nullptr));
     }
     SUBCASE("capacity with a null list pointer") {
         size_t capacity = 99;
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, seq_list_capacity(nullptr, &capacity));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_capacity(nullptr, &capacity));
     }
     SUBCASE("capacity with a null out parameter") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, seq_list_capacity(&list, nullptr));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_capacity(&list, nullptr));
     }
 
     seq_list_free(&list);

@@ -35,7 +35,7 @@ static DListNode* dlist_node_create(const TOYLIB_DLIST_VALUE_TYPE value, DListNo
 
 ToylibError dlist_init(DList* dlist) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
 
     dlist->head_ = dlist_node_create(0, NULL, NULL);
     dlist->tail_ = dlist_node_create(0, NULL, NULL);
@@ -51,7 +51,7 @@ ToylibError dlist_init(DList* dlist) {
 
 ToylibError dlist_insert(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE value) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (index > dlist->length_)
@@ -78,7 +78,7 @@ ToylibError dlist_insert(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TY
 
 ToylibError dlist_delete(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE* deleted_value) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (dlist->head_->next_ == dlist->tail_)
@@ -106,10 +106,8 @@ ToylibError dlist_delete(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TY
 }
 
 ToylibError dlist_find(const DList* dlist, size_t* index, const TOYLIB_DLIST_VALUE_TYPE value) {
-    if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
-    if (index == NULL)
-        return TOYLIB_ERR_BAD_ARG_2;
+    if (dlist == NULL || index == NULL)
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
 
@@ -129,7 +127,7 @@ ToylibError dlist_find(const DList* dlist, size_t* index, const TOYLIB_DLIST_VAL
 
 ToylibError dlist_free(DList* dlist) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
 
@@ -148,10 +146,8 @@ ToylibError dlist_free(DList* dlist) {
 }
 
 ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE* value) {
-    if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
-    if (value == NULL)
-        return TOYLIB_ERR_BAD_ARG_3;
+    if (dlist == NULL || value == NULL)
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (index >= dlist->length_)
@@ -169,7 +165,7 @@ ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE
 
 ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE value) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     if (index >= dlist->length_)
@@ -186,9 +182,9 @@ ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE 
 
 ToylibError dlist_length(const DList* dlist, size_t* length) {
     if (dlist == NULL)
-        return TOYLIB_ERR_BAD_ARG_1;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (length == NULL)
-        return TOYLIB_ERR_BAD_ARG_2;
+        return TOYLIB_ERR_BAD_ARG_NULL;
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
     *length = dlist->length_;
