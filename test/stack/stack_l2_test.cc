@@ -16,7 +16,7 @@ TEST_SUITE_BEGIN("[Stack][L2]");
  * 校验init拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("init rejects a null stack pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, stack_init(nullptr, 4));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_init(nullptr, 4));
 }
 
 /**
@@ -26,7 +26,7 @@ TEST_CASE("init rejects a null stack pointer") {
 TEST_CASE("init rejects a zero capacity") {
     Stack stack{};
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, stack_init(&stack, 0));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, stack_init(&stack, 0));
 }
 
 /**
@@ -37,10 +37,10 @@ TEST_CASE("init rejects a capacity above the max") {
     Stack stack{};
 
     SUBCASE("capacity is max plus one") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, stack_init(&stack, TOYLIB_STACK_MAX_CAPACITY + 1));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, stack_init(&stack, TOYLIB_STACK_MAX_CAPACITY + 1));
     }
     SUBCASE("capacity is SIZE_MAX") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, stack_init(&stack, SIZE_MAX));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, stack_init(&stack, SIZE_MAX));
     }
 }
 
@@ -48,7 +48,7 @@ TEST_CASE("init rejects a capacity above the max") {
  * 校验push拒绝空指针, 返回BAD_ARG_1
  */
 TEST_CASE("push rejects a null stack pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, stack_push(nullptr, 1));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_push(nullptr, 1));
 }
 
 /**
@@ -113,13 +113,13 @@ TEST_CASE("top on an empty stack reports empty") {
 }
 
 /**
- * 校验top拒绝空出参, 返回BAD_ARG_2
- * @note value是第二个参数, 所以编号是2
+ * 校验top拒绝空出参, 返回参数空指针错误
+ * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
 TEST_CASE("top rejects a null out parameter") {
     Stack stack = make_stack(4, {1});
 
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, stack_top(&stack, nullptr));
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_top(&stack, nullptr));
 
     stack_free(&stack);
 }
@@ -164,20 +164,20 @@ TEST_CASE("operations on an uninitialized stack report not initialized") {
 
 /**
  * 校验length和free的参数校验
- * @note length的length出参是第二个参数, 返回BAD_ARG_2
+ * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
 TEST_CASE("length and free reject invalid arguments") {
     SUBCASE("length rejects a null stack pointer") {
         size_t length = 0;
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, stack_length(nullptr, &length));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_length(nullptr, &length));
     }
     SUBCASE("length rejects a null out parameter") {
         Stack stack = make_stack(4, {});
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_2, stack_length(&stack, nullptr));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_length(&stack, nullptr));
         stack_free(&stack);
     }
     SUBCASE("free rejects a null stack pointer") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_1, stack_free(nullptr));
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, stack_free(nullptr));
     }
 }
 
