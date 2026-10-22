@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "doctest/doctest.h"
+#include "test_support.h"
 #include "toylib/seqlist.h"
 
 namespace toylib_test {

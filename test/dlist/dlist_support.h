@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "doctest/doctest.h"
+#include "test_support.h"
 #include "toylib/dlist.h"
 
 namespace toylib_test {
