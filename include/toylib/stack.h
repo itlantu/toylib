@@ -55,7 +55,7 @@ ToylibError stack_pop(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value);
  * @return 成功或失败原因, 空栈时返回TOYLIB_ERR_EMPTY
  * @note 只读操作, 调用之后栈内元素个数不变
  */
-ToylibError stack_top(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value);
+ToylibError stack_top(const Stack* stack, TOYLIB_STACK_VALUE_TYPE* value);
 
 /**
  * 释放栈分配的内存, 并把字段复位(容量0, 长度0, data_为空)
@@ -70,7 +70,7 @@ ToylibError stack_free(Stack* stack);
  * @param length 栈内元素个数, 不为空指针
  * @return 成功或失败原因
  */
-ToylibError stack_length(Stack* stack, size_t* length);
+ToylibError stack_length(const Stack* stack, size_t* length);
 
 #ifdef __cplusplus
 }
