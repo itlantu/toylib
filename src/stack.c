@@ -52,7 +52,7 @@ ToylibError stack_top(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
     if (!stack->length_)
         return TOYLIB_ERR_EMPTY;
 
-    *value = stack->data_[stack->length_];
+    *value = stack->data_[stack->length_ - 1];
     return TOYLIB_OK;
 }
 
