@@ -9,27 +9,33 @@ typedef enum {
     // OK, 无异常
     TOYLIB_OK = 0,
 
-    // NOMEM, 内存分配失败
-    TOYLIB_ERR_NOMEM,
+    // BAD_ARG_NULL, 参数是空指针
+    TOYLIB_ERR_BAD_ARG_NULL,
+    // BAD_ARG_VALUE, 参数值非法(容量为0或者大于上限)
+    TOYLIB_ERR_BAD_ARG_VALUE,
+    // NOT_INITIALIZED, 未初始化
+    TOYLIB_ERR_NOT_INITIALIZED,
+
     // OUT_OF_RANGE, 下标越界
     TOYLIB_ERR_OUT_OF_RANGE,
     // CAPACITY_FULL, 当前数据集结构的容量已满, 无法插入元素
     TOYLIB_ERR_CAPACITY_FULL,
     // ERR_EMPTY, 当前数据结构的容量为空, 无法删除元素
     TOYLIB_ERR_EMPTY,
-    // NOT_INITIALIZED, 未初始化
-    TOYLIB_ERR_NOT_INITIALIZED,
 
-    // BAD_ARG_1, 函数调用时, 第一个参数不合法
-    TOYLIB_ERR_BAD_ARG_1,
-    // BAD_ARG_2, 函数调用时, 第二个参数不合法
-    TOYLIB_ERR_BAD_ARG_2,
-    // BAD_ARG_3, 函数调用时, 第三个参数不合法
-    TOYLIB_ERR_BAD_ARG_3,
-    // BAD_ARG_4, 函数调用时, 第四个参数不合法
-    TOYLIB_ERR_BAD_ARG_4,
+    // NOMEM, 内存分配失败
+    TOYLIB_ERR_NOMEM,
 
+    // UNKNOWN, 未知错误, 没有被ToylibError定义
+    TOYLIB_ERR_UNKNOWN
 } ToylibError;
+
+/**
+ * 获取错误码的名称(枚举名)
+ * @param error 错误码
+ * @return 错误码的枚举名
+ */
+const char* toylib_error_name(ToylibError error);
 
 #ifdef __cplusplus
 }
