@@ -5,7 +5,7 @@
 ToylibError stack_init(Stack* stack, const size_t capacity) {
     if (stack == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
-    if (capacity > TOYLIB_STACK_MAX_CAPACITY)
+    if (capacity == 0 || capacity > TOYLIB_STACK_MAX_CAPACITY)
         return TOYLIB_ERR_BAD_ARG_2;
 
     TOYLIB_STACK_VALUE_TYPE* data = malloc(sizeof(TOYLIB_STACK_VALUE_TYPE) * capacity);
@@ -34,15 +34,21 @@ ToylibError stack_push(Stack* stack, const TOYLIB_STACK_VALUE_TYPE value) {
 }
 
 ToylibError stack_pop(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
-    const ToylibError err = stack_top(stack, value);
-    if (err != TOYLIB_OK)
-        return err;
+    if (stack == NULL)
+        return TOYLIB_ERR_BAD_ARG_1;
+    if (stack->data_ == NULL)
+        return TOYLIB_ERR_NOT_INITIALIZED;
+    if (!stack->length_)
+        return TOYLIB_ERR_EMPTY;
+
+    if (value != NULL)
+        *value = stack->data_[stack->length_ - 1];
     stack->length_ -= 1;
 
     return TOYLIB_OK;
 }
 
-ToylibError stack_top(Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
+ToylibError stack_top(const Stack* stack, TOYLIB_STACK_VALUE_TYPE* value) {
     if (stack == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
     if (value == NULL)
@@ -69,7 +75,7 @@ ToylibError stack_free(Stack* stack) {
     return TOYLIB_OK;
 }
 
-ToylibError stack_length(Stack* stack, size_t* length) {
+ToylibError stack_length(const Stack* stack, size_t* length) {
     if (stack == NULL)
         return TOYLIB_ERR_BAD_ARG_1;
     if (length == NULL)
