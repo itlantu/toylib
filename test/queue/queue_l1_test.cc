@@ -2,7 +2,9 @@
  * L1契约级, 锁定每个API的最小可用路径和后置状态
  *
  * 队列比栈和顺序表多一层结构: 元素不再总是从data_[0]开始,
- * 所以除了"值对不对", 还要锁住front_/rear_的走向和回绕规则。
+ * 所以除了"值对不对", 还要锁住front_的走向和回绕规则。
+ * 队尾位置是(front_ + length_) % capacity_推导出来的, 不是独立状态,
+ * 这里只断言能观察到的结果, 不假设实现里存了几份下标。
  */
 
 #include "doctest/doctest.h"
@@ -15,7 +17,7 @@ TEST_SUITE_BEGIN("[Queue][L1]");
 
 /**
  * 校验init按容量分配内存, 建出一个空队列
- * @note 契约: capacity_等于入参, length_为0, front_和rear_都归0, data_指向有效内存
+ * @note 契约: capacity_等于入参, length_为0, front_归0, data_指向有效内存
  */
 TEST_CASE("init allocates memory and leaves the queue empty") {
     Queue queue{};
@@ -25,7 +27,6 @@ TEST_CASE("init allocates memory and leaves the queue empty") {
     CHECK_EQ(queue.capacity_, 4);
     CHECK_EQ(queue.length_, 0);
     CHECK_EQ(queue.front_, 0);
-    CHECK_EQ(queue.rear_, 0);
     CHECK(queue.data_ != nullptr);
 
     queue_free(&queue);
@@ -78,37 +79,18 @@ TEST_CASE("front returns the head value") {
 }
 
 /**
- * 校验rear返回队尾的值
- * @note rear_指向下一个可写位置, 所以队尾元素落在rear_的前一格(要回绕)
- */
-TEST_CASE("rear returns the tail value") {
-    Queue queue = make_queue(4, {1, 2, 3});
-
-    Value value = 0;
-    CHECK_EQ(TOYLIB_OK, queue_rear(&queue, &value));
-
-    CHECK_EQ(value, 3);
-    queue_free(&queue);
-}
-
-/**
- * 校验front和rear都是只读操作, 不弹出也不改动队列
+ * 校验front是只读操作, 不弹出也不改动队列
  * @note 连续读两次结果相同, 长度和内容都不该变
  */
-TEST_CASE("front and rear do not modify the queue") {
+TEST_CASE("front does not modify the queue") {
     Queue queue = make_queue(4, {1, 2, 3});
 
-    Value first_front = 0;
-    Value second_front = 0;
-    Value first_rear = 0;
-    Value second_rear = 0;
-    CHECK_EQ(TOYLIB_OK, queue_front(&queue, &first_front));
-    CHECK_EQ(TOYLIB_OK, queue_front(&queue, &second_front));
-    CHECK_EQ(TOYLIB_OK, queue_rear(&queue, &first_rear));
-    CHECK_EQ(TOYLIB_OK, queue_rear(&queue, &second_rear));
+    Value first = 0;
+    Value second = 0;
+    CHECK_EQ(TOYLIB_OK, queue_front(&queue, &first));
+    CHECK_EQ(TOYLIB_OK, queue_front(&queue, &second));
 
-    CHECK_EQ(first_front, second_front);
-    CHECK_EQ(first_rear, second_rear);
+    CHECK_EQ(first, second);
     CHECK_EQ(queue.length_, 3);
     CHECK_QUEUE(queue, 1, 2, 3);
     queue_free(&queue);
@@ -169,7 +151,6 @@ TEST_CASE("push reuses the slot freed by pop and wraps around") {
 
     CHECK_EQ(queue.length_, 3);
     CHECK_EQ(queue.front_, 2);
-    CHECK_EQ(queue.rear_, 2);
     // 物理上跨了末尾, 逻辑上仍然是连续的三元素
     CHECK_EQ(queue.data_[2], 3);
     CHECK_EQ(queue.data_[0], 4);
@@ -179,22 +160,21 @@ TEST_CASE("push reuses the slot freed by pop and wraps around") {
 }
 
 /**
- * 校验填满到容量之后, 队头和队尾分别是最早和最晚入队的值
- * @note length_等于capacity_时front_和rear_相等, 只能靠length_区分"满"和"空"
+ * 校验满队列和空队列靠length_区分, 不能只看front_
+ * @note 满的时候下一个可写位置正好绕回front_, 单看下标满和空长得一样;
+ *       队列必须仍然认得自己是满的, 而不是被当成空队列把队头丢掉
  */
-TEST_CASE("front and rear stay correct when the queue is full") {
+TEST_CASE("a full queue is told apart from an empty one by length") {
     Queue queue = make_queue(3, {1, 2, 3});
 
     CHECK_EQ(queue.length_, queue.capacity_);
-    CHECK_EQ(queue.front_, queue.rear_);
+    // 下一个可写位置与front_重合, 这正是"只看下标分不清满空"的来源
+    CHECK_EQ(queue.front_, (queue.front_ + queue.length_) % queue.capacity_);
 
     Value front = 0;
-    Value rear = 0;
     CHECK_EQ(TOYLIB_OK, queue_front(&queue, &front));
-    CHECK_EQ(TOYLIB_OK, queue_rear(&queue, &rear));
-
     CHECK_EQ(front, 1);
-    CHECK_EQ(rear, 3);
+    CHECK_EQ(queue.length_, 3);
     queue_free(&queue);
 }
 
@@ -246,7 +226,7 @@ TEST_CASE("capacity reports the allocated capacity") {
 }
 
 /**
- * 校验free释放内存并把五个字段复位
+ * 校验free释放内存并把四个字段复位
  * @note 复位之后才能被未初始化检查识别, 见L2的free rejects a queue that was already freed
  */
 TEST_CASE("free releases memory and resets the fields") {
@@ -258,7 +238,6 @@ TEST_CASE("free releases memory and resets the fields") {
     CHECK_EQ(queue.capacity_, 0);
     CHECK_EQ(queue.length_, 0);
     CHECK_EQ(queue.front_, 0);
-    CHECK_EQ(queue.rear_, 0);
 }
 
 TEST_SUITE_END();

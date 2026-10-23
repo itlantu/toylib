@@ -21,15 +21,17 @@ TEST_CASE("init rejects a null queue pointer") {
 
 /**
  * 校验init校验容量下界: 0不是合法容量
- * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create/stack_init的判定保持一致
+ * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create/stack_init的判定保持一致;
+ *       失败时不能留下半初始化的状态, 否则调用方会拿着垃圾容量去用
  */
 TEST_CASE("init rejects a zero capacity") {
     Queue queue{};
 
     CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, 0));
-    // 失败后不能留下半初始化的状态
+
     CHECK(queue.data_ == nullptr);
     CHECK_EQ(queue.capacity_, 0);
+    CHECK_EQ(queue.length_, 0);
 }
 
 /**
@@ -73,7 +75,7 @@ TEST_CASE("push on a full queue reports capacity full") {
 
 /**
  * 校验容量只在出队之后才腾出来, 出队后能继续入队
- * @note push被拒时不该动length_和rear_, 否则这个"弹一个再压一个"的流程会错位
+ * @note push被拒时不该动length_, 否则这个"弹一个再压一个"的流程会错位
  */
 TEST_CASE("push succeeds again after a pop frees a slot") {
     Queue queue = make_queue(1, {7});
@@ -91,19 +93,18 @@ TEST_CASE("push succeeds again after a pop frees a slot") {
 }
 
 /**
- * 校验满队列被反复撞满也不会让front_/rear_漂移
- * @note 被拒的push如果顺手加了rear_, 下标就会和length_脱节, 后面全乱
+ * 校验满队列被反复撞满也不会让front_和length_漂移
+ * @note 队尾位置是推出来的, 唯一能漂的就是front_和length_;
+ *       被拒的push如果顺手改了长度, 后面算出来的队尾就全错了
  */
-TEST_CASE("rejected push leaves the indices untouched") {
+TEST_CASE("rejected push leaves the queue untouched") {
     Queue queue = make_queue(2, {1, 2});
 
     const size_t front = queue.front_;
-    const size_t rear = queue.rear_;
     for (int i = 0; i < 5; ++i)
         CHECK_EQ(TOYLIB_ERR_CAPACITY_FULL, queue_push(&queue, 9));
 
     CHECK_EQ(queue.front_, front);
-    CHECK_EQ(queue.rear_, rear);
     CHECK_EQ(queue.length_, 2);
     CHECK_QUEUE(queue, 1, 2);
     queue_free(&queue);
@@ -141,33 +142,13 @@ TEST_CASE("front on an empty queue reports empty") {
 }
 
 /**
- * 校验空队列rear返回EMPTY, 出参保持原样
- * @note 空队列时rear_可能已经回绕到0, 取值会算出越界或读到脏数据
- */
-TEST_CASE("rear on an empty queue reports empty") {
-    Queue queue = make_queue(4, {});
-
-    Value value = 42;
-    CHECK_EQ(TOYLIB_ERR_EMPTY, queue_rear(&queue, &value));
-
-    CHECK_EQ(value, 42);
-    CHECK_EQ(queue.length_, 0);
-    queue_free(&queue);
-}
-
-/**
- * 校验front和rear拒绝空出参, 返回参数空指针错误
+ * 校验front拒绝空出参, 返回参数空指针错误
  * @note 出参是唯一的返回值载体, 为空就没地方写结果
  */
-TEST_CASE("front and rear reject a null out parameter") {
+TEST_CASE("front rejects a null out parameter") {
     Queue queue = make_queue(4, {1});
 
-    SUBCASE("front") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_front(&queue, nullptr));
-    }
-    SUBCASE("rear") {
-        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_rear(&queue, nullptr));
-    }
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_front(&queue, nullptr));
 
     CHECK_EQ(queue.length_, 1);
     CHECK_QUEUE(queue, 1);
@@ -189,7 +170,7 @@ TEST_CASE("pop accepts a null out parameter") {
 }
 
 /**
- * 校验未初始化的队列上六个操作都返回NOT_INITIALIZED
+ * 校验未初始化的队列上所有操作都返回NOT_INITIALIZED
  * @note 零初始化的队列data_为空, 应该被识别出来, 而不是让空指针参与下标运算;
  *       pop这里必须传有效出参, 否则会先撞上"出参为空"的检查
  */
@@ -206,10 +187,6 @@ TEST_CASE("operations on an uninitialized queue report not initialized") {
     SUBCASE("front") {
         Value value = 0;
         CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_front(&queue, &value));
-    }
-    SUBCASE("rear") {
-        Value value = 0;
-        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_rear(&queue, &value));
     }
     SUBCASE("free") {
         CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_free(&queue));

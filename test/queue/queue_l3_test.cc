@@ -1,7 +1,7 @@
 /*
  * L3场景级, 用std::deque当参考模型, 跑随机操作序列逐步比对
  *
- * 队列的状态有三条线索: 内容顺序、length_, 以及front_/rear_的相对位置。
+ * 队列的状态只有两条线索: 内容顺序和length_, 队尾位置是从这两条推出来的。
  * 单步测试只能覆盖其中一条, 随机序列能把"填满再弹出""弹空再入队"
  * "在满和空之间反复来回""下标反复回绕"这些组合路径都走一遍。
  */
@@ -38,7 +38,7 @@ TEST_CASE("random operations match the model") {
     for (int step = 0; step < kSteps; ++step) {
         // push占4成, pop占3成, 让长度在0和容量之间来回走, 更容易撞到满和空
         const unsigned dice = rng() % 10;
-        const int op = dice < 4 ? 0 : (dice < 7 ? 1 : (dice == 7 ? 2 : (dice == 8 ? 3 : 4)));
+        const int op = dice < 4 ? 0 : (dice < 7 ? 1 : (dice < 9 ? 2 : 3));
         const Value value = static_cast<Value>(rng() % 100);
 
         std::string op_name = "push";
@@ -47,8 +47,6 @@ TEST_CASE("random operations match the model") {
         else if (op == 2)
             op_name = "front";
         else if (op == 3)
-            op_name = "rear";
-        else if (op == 4)
             op_name = "length";
         CAPTURE(step);
         CAPTURE(op_name);
@@ -86,16 +84,6 @@ TEST_CASE("random operations match the model") {
                     CHECK_EQ(front, model.front());
                 break;
             }
-            case 3: {
-                // rear: 和front对称, 读的是最后入队的元素
-                const ToylibError expected = model.empty() ? TOYLIB_ERR_EMPTY : TOYLIB_OK;
-
-                Value rear = 0;
-                CHECK_EQ(expected, queue_rear(&queue, &rear));
-                if (expected == TOYLIB_OK)
-                    CHECK_EQ(rear, model.back());
-                break;
-            }
             default: {
                 size_t length = 0;
                 CHECK_EQ(TOYLIB_OK, queue_length(&queue, &length));
@@ -107,10 +95,9 @@ TEST_CASE("random operations match the model") {
         // 每一步之后全量比对, 从队头到队尾
         CHECK_EQ(to_values(queue), std::vector<Value>(model.begin(), model.end()));
 
-        // 结构不变量: 下标必须始终落在[0, capacity), 且长度和front_能推出rear_
+        // 结构不变量: 下标必须始终落在[0, capacity), 长度不能超过容量
         CHECK(queue.front_ < queue.capacity_);
-        CHECK(queue.rear_ < queue.capacity_);
-        CHECK_EQ(queue.rear_, (queue.front_ + queue.length_) % queue.capacity_);
+        CHECK(queue.length_ <= queue.capacity_);
     }
 
     queue_free(&queue);
@@ -140,7 +127,6 @@ TEST_CASE("the head index wraps around while the queue stays full") {
             next = static_cast<Value>(next + 1);
         }
         CHECK_EQ(queue.length_, kCapacity);
-        CHECK_EQ(queue.front_, queue.rear_);
 
         // 弹一个再补一个, 空出来的槽立刻被复用
         Value value = 0;
@@ -154,7 +140,6 @@ TEST_CASE("the head index wraps around while the queue stays full") {
 
         CHECK_EQ(queue.length_, kCapacity);
         CHECK_EQ(queue.front_, (static_cast<size_t>(round) + 1) % kCapacity);
-        CHECK_EQ(queue.rear_, queue.front_);
         CHECK_EQ(to_values(queue), std::vector<Value>(model.begin(), model.end()));
     }
 
