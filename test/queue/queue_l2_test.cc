@@ -21,17 +21,19 @@ TEST_CASE("init rejects a null queue pointer") {
 
 /**
  * 校验init校验容量下界: 0不是合法容量
- * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create/stack_init的判定保持一致;
- *       失败时不能留下半初始化的状态, 否则调用方会拿着垃圾容量去用
+ * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create/stack_init的判定保持一致
  */
 TEST_CASE("init rejects a zero capacity") {
-    Queue queue{};
+    // 用哨兵值打底: 起手全零的话, 实现"写0"和"压根不写"在断言上看不出区别
+    Queue queue{7, 3, 5, nullptr};
 
     CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, 0));
 
+    // 失败不能留下半初始化的状态, 也不能把调用方的原有内容改掉
+    CHECK_EQ(queue.capacity_, 7);
+    CHECK_EQ(queue.front_, 3);
+    CHECK_EQ(queue.length_, 5);
     CHECK(queue.data_ == nullptr);
-    CHECK_EQ(queue.capacity_, 0);
-    CHECK_EQ(queue.length_, 0);
 }
 
 /**
@@ -39,7 +41,7 @@ TEST_CASE("init rejects a zero capacity") {
  * @note 上界是闭区间, MAX_SIZE本身合法, 加一就不行
  */
 TEST_CASE("init rejects a capacity above the max") {
-    Queue queue{};
+    Queue queue{7, 3, 5, nullptr};
 
     SUBCASE("capacity is max plus one") {
         CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, TOYLIB_QUEUE_MAX_SIZE + 1));
@@ -48,8 +50,10 @@ TEST_CASE("init rejects a capacity above the max") {
         CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, SIZE_MAX));
     }
 
+    CHECK_EQ(queue.capacity_, 7);
+    CHECK_EQ(queue.front_, 3);
+    CHECK_EQ(queue.length_, 5);
     CHECK(queue.data_ == nullptr);
-    CHECK_EQ(queue.capacity_, 0);
 }
 
 /**
@@ -170,6 +174,28 @@ TEST_CASE("pop accepts a null out parameter") {
 }
 
 /**
+ * 校验pop和front拒绝空队列指针
+ * @note 空指针检查和对出参的空指针检查是两个独立条件, 要分开测;
+ *       只测"出参为空"的话, "队列指针为空"那条分支永远走不到
+ */
+TEST_CASE("pop and front reject a null queue pointer") {
+    SUBCASE("pop") {
+        Value value = 0;
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_pop(nullptr, &value));
+    }
+    SUBCASE("front") {
+        Value value = 0;
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_front(nullptr, &value));
+    }
+    SUBCASE("both arguments are null") {
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_pop(nullptr, nullptr));
+    }
+    SUBCASE("front with both arguments null") {
+        CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, queue_front(nullptr, nullptr));
+    }
+}
+
+/**
  * 校验未初始化的队列上所有操作都返回NOT_INITIALIZED
  * @note 零初始化的队列data_为空, 应该被识别出来, 而不是让空指针参与下标运算;
  *       pop这里必须传有效出参, 否则会先撞上"出参为空"的检查
@@ -192,12 +218,15 @@ TEST_CASE("operations on an uninitialized queue report not initialized") {
         CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_free(&queue));
     }
     SUBCASE("length") {
-        size_t length = 0;
+        size_t length = 99;
         CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_length(&queue, &length));
+        // 出错时不准碰出参, 否则调用方分不清拿到的是结果还是自己的初值
+        CHECK_EQ(length, 99);
     }
     SUBCASE("capacity") {
-        size_t capacity = 0;
+        size_t capacity = 99;
         CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_capacity(&queue, &capacity));
+        CHECK_EQ(capacity, 99);
     }
 }
 
@@ -242,6 +271,36 @@ TEST_CASE("free rejects a queue that was already freed") {
 
     CHECK_EQ(TOYLIB_OK, queue_free(&queue));
     CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_free(&queue));
+}
+
+/**
+ * 校验free之后其余操作全部退回NOT_INITIALIZED
+ * @note 零初始化(从未init)和"init过后又free"是两条不同的路径, 内存状态都是全零,
+ *       但只有后者验证了free确实把结构体复位干净, 不会让后续操作拿到悬空指针
+ */
+TEST_CASE("operations on a freed queue report not initialized") {
+    Queue queue = make_queue(4, {1, 2, 3});
+    REQUIRE_EQ(TOYLIB_OK, queue_free(&queue));
+
+    SUBCASE("push") {
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_push(&queue, 1));
+    }
+    SUBCASE("pop") {
+        Value value = 0;
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_pop(&queue, &value));
+    }
+    SUBCASE("front") {
+        Value value = 0;
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_front(&queue, &value));
+    }
+    SUBCASE("length") {
+        size_t length = 0;
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_length(&queue, &length));
+    }
+    SUBCASE("capacity") {
+        size_t capacity = 0;
+        CHECK_EQ(TOYLIB_ERR_NOT_INITIALIZED, queue_capacity(&queue, &capacity));
+    }
 }
 
 TEST_SUITE_END();
