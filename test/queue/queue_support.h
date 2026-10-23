@@ -23,13 +23,12 @@ using Value = TOYLIB_QUEUE_VALUE_TYPE;
  * @param queue 目标队列
  * @return 元素拷贝, 下标0是队头, 末尾是队尾
  * @note 循环队列的元素可以跨过数组末尾, data_不再是连续区间,
- *       所以必须从front_出发按capacity_回绕逐个读; 长度大于容量说明队列状态已坏,
- *       这里只按length_取, 多出来的部分会算出重复元素, 交给用例自己去发现
+ *       所以必须从front_出发按capacity_回绕逐个读;
+ *       这里不额外判capacity_为0: 长度大于0时容量必然大于0, 长度本身就挡住了循环,
+ *       真出现"容量0但长度非0"说明不变量已经坏了, 宁可当场崩掉也不要静默返回空表
  */
 inline std::vector<Value> to_values(const Queue& queue) {
     std::vector<Value> values;
-    if (queue.capacity_ == 0)
-        return values;
     values.reserve(queue.length_);
     for (size_t i = 0; i < queue.length_; ++i)
         values.push_back(queue.data_[(queue.front_ + i) % queue.capacity_]);
