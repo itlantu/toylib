@@ -53,10 +53,12 @@ ToylibError queue_pop(Queue* queue, TOYLIB_QUEUE_VALUE_TYPE* value) {
 }
 
 ToylibError queue_front(const Queue* queue, TOYLIB_QUEUE_VALUE_TYPE* value) {
-    if (queue == NULL || value)
+    if (queue == NULL || value == NULL)
         return TOYLIB_ERR_BAD_ARG_NULL;
     if (queue->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
+    if (queue->length_ == 0)
+        return TOYLIB_ERR_EMPTY;
 
     *value = queue->data_[queue->front_];
 
@@ -68,8 +70,11 @@ ToylibError queue_rear(const Queue* queue, TOYLIB_QUEUE_VALUE_TYPE* value) {
         return TOYLIB_ERR_BAD_ARG_NULL;
     if (queue->data_ == NULL)
         return TOYLIB_ERR_NOT_INITIALIZED;
+    if (queue->length_ == 0)
+        return TOYLIB_ERR_EMPTY;
 
-    *value = queue->data_[queue->rear_];
+    // rear_指向下一个可写位置, 队尾元素在它的前一格, 回绕时要借一次capacity_
+    *value = queue->data_[(queue->rear_ + queue->capacity_ - 1) % queue->capacity_];
 
     return TOYLIB_OK;
 }
