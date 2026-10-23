@@ -1,9 +1,3 @@
-/*
- * queue模块实现循环队列(circular queue)
- * 底层是一段定长数组, front_指向队头元素, rear_指向队尾的下一个可写位置,
- * 下标到达数组末尾后回绕到0, 因此出队后的空间可以被后续入队复用
- */
-
 #ifndef TOYLIB_QUEUE_H
 #define TOYLIB_QUEUE_H
 
