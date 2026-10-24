@@ -34,6 +34,7 @@ typedef enum {
  * 获取错误码的名称(枚举名)
  * @param error 错误码
  * @return 错误码的枚举名
+ * @note 错误码落在已定义的区间之外时返回TOYLIB_ERR_UNKNOWN对应的字符串
  */
 const char* toylib_error_name(ToylibError error);
 
