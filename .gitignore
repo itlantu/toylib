@@ -6,3 +6,9 @@
 # build
 cmake-build-*/
 build/
+
+# docs
+docs/
+
+# python
+*__pycache__/
