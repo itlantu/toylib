@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           # Sphinx 9.x要求Python>=3.13
           python-version: "3.13"
@@ -47,7 +47,7 @@ jobs:
         run: python script/build_docs/build_docs.py --clean
 
       - name: Upload docs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-html
           path: docs/html
@@ -55,8 +55,9 @@ jobs:
 
   deploy:
     name: deploy to GitHub Pages
-    # 手动触发没有 push 事件, 所以只看分支: 在 main 上手动跑才发布, 其他分支只做构建验证
-    if: github.ref == 'refs/heads/main'
+    # 手动触发没有 push 事件, 所以只能看分支: 在默认分支上跑才发布, 其他分支只做构建验证。
+    # 不写死 dev, 直接取仓库的默认分支, 以后换主干也不用改这里
+    if: github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
 
@@ -70,19 +71,19 @@ jobs:
 
     steps:
       - name: Download docs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-html
           path: docs/html
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/html
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
