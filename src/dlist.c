@@ -153,10 +153,6 @@ ToylibError dlist_get(const DList* dlist, const size_t index, TOYLIB_DLIST_VALUE
     if (index >= dlist->length_)
         return TOYLIB_ERR_OUT_OF_RANGE;
 
-    // DListNode* p = dlist->head_->next_;
-    // for (size_t i = 0; i < index; ++i) {
-    //     p = p->next_;
-    // }
     const DListNode* p = dlist_index_node_(dlist, index);
     *value = p->value_;
 
@@ -171,10 +167,6 @@ ToylibError dlist_set(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TYPE 
     if (index >= dlist->length_)
         return TOYLIB_ERR_OUT_OF_RANGE;
 
-    // DListNode* p = dlist->head_->next_;
-    // for (size_t i = 0; i < index; ++i) {
-    //     p = p->next_;
-    // }
     DListNode* p = dlist_index_node_(dlist, index);
     p->value_ = value;
     return TOYLIB_OK;
