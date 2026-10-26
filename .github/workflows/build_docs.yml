@@ -1,10 +1,10 @@
-name: docs
+name: build_docs
 
 on:
   workflow_dispatch:
 
 concurrency:
-  group: docs-${{ github.ref }}
+  group: build-docs-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
