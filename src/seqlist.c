@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-ToylibError seq_list_create(SeqList* seq_list, const size_t capacity) {
+ToylibError seq_list_init(SeqList* seq_list, const size_t capacity) {
     if (seq_list == NULL)
         return TOYLIB_ERR_BAD_ARG_NULL;
     if (capacity == 0 || capacity > TOYLIB_SEQLIST_MAX_CAPACITY)
@@ -11,18 +11,6 @@ ToylibError seq_list_create(SeqList* seq_list, const size_t capacity) {
     void* data = malloc(sizeof(TOYLIB_SEQLIST_ELEMENT_TYPE) * capacity);
     if (data == NULL)
         return TOYLIB_ERR_NOMEM;
-
-    seq_list->capacity_ = capacity;
-    seq_list->length_ = 0;
-    seq_list->data_ = data;
-    return TOYLIB_OK;
-}
-
-ToylibError seq_list_init(SeqList* seq_list, TOYLIB_SEQLIST_ELEMENT_TYPE* data, const size_t capacity) {
-    if (seq_list == NULL || data == NULL)
-        return TOYLIB_ERR_BAD_ARG_NULL;
-    if (capacity == 0 || capacity > TOYLIB_SEQLIST_MAX_CAPACITY)
-        return TOYLIB_ERR_BAD_ARG_VALUE;
 
     seq_list->capacity_ = capacity;
     seq_list->length_ = 0;

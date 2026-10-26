@@ -42,19 +42,7 @@ typedef struct {
  *         内存不足返回TOYLIB_ERR_NOMEM
  * @note 内存由本函数分配, 用完需要seq_list_free释放
  */
-ToylibError seq_list_create(SeqList* seq_list, size_t capacity);
-
-/**
- * 根据已分配的内存, 初始化顺序表, length_置为0
- * @param seq_list 目标顺序表, 不为空指针
- * @param data 元素类型为TOYLIB_SEQLIST_ELEMENT_TYPE的数组, 不为空指针
- * @param capacity 顺序表容量, 即data的长度, 取值[1, TOYLIB_SEQLIST_MAX_CAPACITY]
- * @return 成功或失败原因,
- *         参数为空指针返回TOYLIB_ERR_BAD_ARG_NULL,
- *         容量为0或超过上限返回TOYLIB_ERR_BAD_ARG_VALUE
- * @note 只借用调用方的数组, 既不拷贝也不接管, 这种顺序表不应调用seq_list_free
- */
-ToylibError seq_list_init(SeqList* seq_list, TOYLIB_SEQLIST_ELEMENT_TYPE* data, size_t capacity);
+ToylibError seq_list_init(SeqList* seq_list, size_t capacity);
 
 /**
  * 在顺序表的指定位置插入元素, 插入点之后的元素整体后移
