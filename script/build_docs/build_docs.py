@@ -34,7 +34,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # 配置和路径全在 config.py, 这里只取需要用的; 直接运行本文件时 sys.path[0] 就是本目录
@@ -152,6 +152,11 @@ class BuildInfo:
     built_at: str
 
 
+# 构建信息里的时间固定按中国时区(UTC+8)显示。中国不实行夏令时, 直接用固定偏移就够,
+# 也省得依赖 tzdata —— Windows 默认没有系统时区库, zoneinfo 会指向一个不存在的区域
+CHINA_TZ = timezone(timedelta(hours=8))
+
+
 def git_output(*args: str) -> str:
     """读一条 git 信息
 
@@ -180,8 +185,8 @@ def collect_build_info() -> BuildInfo:
     return BuildInfo(
         branch=branch or "未知",
         commit=commit[:7] or "未知",
-        # 带时区偏移, CI 是 UTC, 本地是 UTC+8, 都如实写出来
-        built_at=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %z"),
+        # 统一按中国时区显示: 构建机的时区不固定(CI 上是 UTC, 本地是 UTC+8), 不钉死就会差 8 小时
+        built_at=datetime.now(CHINA_TZ).strftime("%Y-%m-%d %H:%M:%S %z"),
     )
 
 
