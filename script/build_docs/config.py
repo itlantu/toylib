@@ -31,9 +31,13 @@ DOXYFILE = DOCS_DIR / "Doxyfile"
 # Sphinx 的中间态放发布目录外面, 否则 .doctrees 会被一起上传和发布
 DOCTREES_DIR = DOCS_DIR / "doctrees"
 
-# 首页正文的模板, 里面用占位符标出模块列表要填的位置
+# 首页正文的模板, 里面用占位符标出由脚本填的位置
 INDEX_TEMPLATE = SCRIPT_DIR / "index.rst"
 MODULE_PLACEHOLDER = "@MODULES@"
+# 构建信息来源: 分支, 提交, 构建时间
+BRANCH_PLACEHOLDER = "@BRANCH@"
+COMMIT_PLACEHOLDER = "@COMMIT@"
+BUILT_AT_PLACEHOLDER = "@BUILT_AT@"
 
 # Sphinx 侧需要的包, 缺了直接退出, 不要等到构建一半才发现
 REQUIRED_MODULES = ("sphinx", "breathe", "furo")

@@ -13,7 +13,7 @@
     script/build_docs/   脚本, 配置和首页源文件, 全部进版本库
       config.py          所有配置(路径, Sphinx, Doxygen)都在这
       conf.py            Sphinx 入口, 只把 config.py 的配置展开成模块变量
-      index.rst          首页正文, 模块列表由脚本填
+      index.rst          首页正文, 模块列表和构建信息由脚本填
     docs/                全是生成物, 整个不进版本库
       Doxyfile           按头文件里的宏自动生成
       src/               按头文件自动生成的 rst
@@ -27,15 +27,21 @@
 
 import argparse
 import importlib.util
+import os
 import re
 import shutil
 import subprocess
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 # 配置和路径全在 config.py, 这里只取需要用的; 直接运行本文件时 sys.path[0] 就是本目录
 from config import (
+    BRANCH_PLACEHOLDER,
+    BUILT_AT_PLACEHOLDER,
+    COMMIT_PLACEHOLDER,
     DOCS_DIR,
     DOCTREES_DIR,
     DOXYFILE,
@@ -133,6 +139,52 @@ def collect_predefined(headers: list[Path]) -> list[str]:
     return predefined
 
 
+@dataclass(frozen=True)
+class BuildInfo:
+    """本次构建的来源信息, 会写进首页
+
+    @note 三个字段都是可以直接填进模板的文本, 取值和格式化都交给 collect_build_info,
+          渲染那边只负责替换
+    """
+
+    branch: str
+    commit: str
+    built_at: str
+
+
+def git_output(*args: str) -> str:
+    """读一条 git 信息
+
+    @param args git 的子命令和参数
+    @return 去掉首尾空白的输出, 取不到时返回空串
+    @note 构建机上不一定有 git(比如只解压了源码包), 所以失败一律静默降级, 不影响出文档
+    """
+    try:
+        result = subprocess.run(["git", *args], cwd=ROOT_DIR, capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    return result.stdout.strip()
+
+
+def collect_build_info() -> BuildInfo:
+    """收集分支, 提交和构建时间
+
+    @return 写进首页的构建信息
+    @note GitHub Actions 会提供 GITHUB_REF_NAME / GITHUB_SHA, 优先用它们:
+          CI 里是浅克隆 + 游离 HEAD, git 命令拿不到分支名;
+          本地则退回 git, 再取不到就写"未知", 不让这点信息把构建卡住
+    """
+    branch = os.environ.get("GITHUB_REF_NAME") or git_output("rev-parse", "--abbrev-ref", "HEAD")
+    commit = os.environ.get("GITHUB_SHA") or git_output("rev-parse", "HEAD")
+
+    return BuildInfo(
+        branch=branch or "未知",
+        commit=commit[:7] or "未知",
+        # 带时区偏移, CI 是 UTC, 本地是 UTC+8, 都如实写出来
+        built_at=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %z"),
+    )
+
+
 def qualify_file_names() -> set[str]:
     """把 index.xml 里的文件复合名补成带目录的相对路径
 
@@ -184,13 +236,14 @@ def render_page(title: str, entries: list[str]) -> str:
     return f"{title}\n{'=' * len(title)}\n\n.. toctree::\n   :maxdepth: 2\n\n{body}"
 
 
-def render_index(entries: list[str]) -> str:
-    """把首页模板里的占位符换成模块列表
+def render_index(entries: list[str], info: BuildInfo) -> str:
+    """把首页模板里的占位符换成模块列表和构建信息
 
     @param entries toctree 条目, 相对于 docs/src
+    @param info 本次构建的分支/提交/时间
     @return 替换好的首页正文
     @note 正文写在 script/build_docs/index.rst, 这里只做占位符替换;
-          续行的缩进从占位符所在行读出来, 所以模板怎么缩进都对
+          toctree 续行的缩进从占位符所在行读出来, 所以模板怎么缩进都对
     """
     template = INDEX_TEMPLATE.read_text(encoding="utf-8")
     match = re.search(rf"^([ \t]*){re.escape(MODULE_PLACEHOLDER)}", template, re.MULTILINE)
@@ -198,14 +251,28 @@ def render_index(entries: list[str]) -> str:
         raise SystemExit(f"{INDEX_TEMPLATE} 里找不到占位符 {MODULE_PLACEHOLDER}")
 
     separator = "\n" + match.group(1)
-    return template.replace(MODULE_PLACEHOLDER, separator.join(entries))
+    text = template.replace(MODULE_PLACEHOLDER, separator.join(entries))
+
+    values = {
+        BRANCH_PLACEHOLDER: info.branch,
+        COMMIT_PLACEHOLDER: info.commit,
+        BUILT_AT_PLACEHOLDER: info.built_at,
+    }
+    for placeholder, value in values.items():
+        # 占位符被误删时直接报错, 别静默生成一份没有构建信息的首页
+        if placeholder not in text:
+            raise SystemExit(f"{INDEX_TEMPLATE} 里找不到占位符 {placeholder}")
+        text = text.replace(placeholder, value)
+
+    return text
 
 
-def generate_sources(headers: list[Path], file_names: set[str]) -> None:
+def generate_sources(headers: list[Path], file_names: set[str], info: BuildInfo) -> None:
     """按头文件生成 Sphinx 需要的 rst, 目录结构与头文件一致
 
     @param headers collect_headers 的结果
     @param file_names qualify_file_names 返回的可用复合名
+    @param info 本次构建的分支/提交/时间, 只用于首页
     @note 每个页面正文只有一句 doxygenfile 指令, 函数列表和文档在构建时由 Breathe 渲染,
           所以头文件里增删函数都不用动这里;
           utils/error.h 会落到 api/utils/error.rst, 并自动生成 api/utils/index.rst 承担那层目录,
@@ -245,7 +312,7 @@ def generate_sources(headers: list[Path], file_names: set[str]) -> None:
     # 首页列出最外层的模块和子目录
     top = [f"api/{name}" for name in modules[TOP]]
     top += [f"api/{sub.name}/index" for sub in sorted(folders) if sub.parent == TOP]
-    (SOURCE_DIR / "index.rst").write_text(render_index(top), encoding="utf-8")
+    (SOURCE_DIR / "index.rst").write_text(render_index(top, info), encoding="utf-8")
 
     print(f"生成了 {len(headers)} 个模块页面, {len(folders)} 个目录页")
 
@@ -291,10 +358,14 @@ def build(clean: bool, allow_warnings: bool) -> Path:
     headers = collect_headers()
     generate_doxyfile(collect_predefined(headers))
 
+    # 构建信息只进首页那一小块, 先收集好, 后面写 rst 时直接用
+    info = collect_build_info()
+    print(f"构建来源: 分支 {info.branch}, 提交 {info.commit}, {info.built_at}")
+
     run([doxygen, str(DOXYFILE)], "Doxygen 生成 XML")
 
     # 得等 doxygen 跑完才知道每个文件在 XML 里叫什么, 所以 rst 放在它后面写
-    generate_sources(headers, qualify_file_names())
+    generate_sources(headers, qualify_file_names(), info)
 
     # -c 指定配置目录(script/build_docs), -d 把中间态挪出发布目录, 源目录是自动生成的 docs/src
     sphinx = [
