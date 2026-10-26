@@ -1,7 +1,10 @@
 """文档构建的全部配置, build_docs.py 和 conf.py 共用
 
+路径、模板占位符这些零散常量收在 BuildConfig 里, 别的文件一句
+`from config import BuildConfig` 就够, 不用把十几个名字一个个列出来。
+
 Sphinx 的配置项是小写变量名, Doxygen 的是大写键名, 两套规范不同,
-所以分成 SphinxConfig 和 DoxygenConfig 两个类, 而不是硬塞进一个:
+所以再分成 SphinxConfig 和 DoxygenConfig 两个类, 而不是硬塞进 BuildConfig:
 混在一个类里既不好读, 也没法共用同一套序列化规则。
 
 conf.py 之所以还存在, 是因为 Sphinx 只认这个文件名, 它只负责把 SphinxConfig 展开成模块变量。
@@ -9,38 +12,47 @@ conf.py 之所以还存在, 是因为 Sphinx 只认这个文件名, 它只负责
 
 from pathlib import Path
 
-# ---------- 路径 ----------
 
-SCRIPT_PATH = Path(__file__).resolve()
-SCRIPT_DIR = SCRIPT_PATH.parent
-ROOT_DIR = SCRIPT_DIR.parents[1]
-# 生成物里标注"本文件由谁生成", 用相对路径, 换机器也不会写死绝对路径
-SCRIPT_REL = SCRIPT_PATH.relative_to(ROOT_DIR).as_posix()
+class BuildConfig:
+    """构建流程自己用到的路径、占位符和依赖清单
 
-REQUIREMENTS = ROOT_DIR / "requirements.txt"
-INCLUDE_DIR = ROOT_DIR / "include"
-# 文档结构的根: 剥掉最外层的 toylib, 页面就按 utils/error 这种相对路径铺开
-PACKAGE_DIR = INCLUDE_DIR / "toylib" if (INCLUDE_DIR / "toylib").is_dir() else INCLUDE_DIR
+    属性名保持大写, 用起来和模块级常量一样, 只是多一层 BuildConfig. 前缀:
+    类体本身就是命名空间, 写成 BuildConfig.DOCS_DIR 比逐个 import 更能看出值从哪来
+    """
 
-# 生成物统一落在这里, 整个目录不进版本库
-DOCS_DIR = ROOT_DIR / "docs"
-SOURCE_DIR = DOCS_DIR / "src"
-HTML_DIR = DOCS_DIR / "html"
-XML_DIR = DOCS_DIR / "xml"
-DOXYFILE = DOCS_DIR / "Doxyfile"
-# Sphinx 的中间态放发布目录外面, 否则 .doctrees 会被一起上传和发布
-DOCTREES_DIR = DOCS_DIR / "doctrees"
+    # ---------- 路径 ----------
+    SCRIPT_PATH = Path(__file__).resolve()
+    SCRIPT_DIR = SCRIPT_PATH.parent
+    ROOT_DIR = SCRIPT_DIR.parents[1]
+    # 生成物里标注"本文件由谁生成", 用相对路径, 换机器也不会写死绝对路径
+    SCRIPT_REL = SCRIPT_PATH.relative_to(ROOT_DIR).as_posix()
 
-# 首页正文的模板, 里面用占位符标出由脚本填的位置
-INDEX_TEMPLATE = SCRIPT_DIR / "index.rst"
-MODULE_PLACEHOLDER = "@MODULES@"
-# 构建信息来源: 分支, 提交, 构建时间
-BRANCH_PLACEHOLDER = "@BRANCH@"
-COMMIT_PLACEHOLDER = "@COMMIT@"
-BUILT_AT_PLACEHOLDER = "@BUILT_AT@"
+    REQUIREMENTS = ROOT_DIR / "requirements.txt"
+    INCLUDE_DIR = ROOT_DIR / "include"
+    # 文档结构的根: 剥掉最外层的 toylib, 页面就按 utils/error 这种相对路径铺开
+    PACKAGE_DIR = INCLUDE_DIR / "toylib" if (INCLUDE_DIR / "toylib").is_dir() else INCLUDE_DIR
 
-# Sphinx 侧需要的包, 缺了直接退出, 不要等到构建一半才发现
-REQUIRED_MODULES = ("sphinx", "breathe", "furo")
+    # 生成物统一落在这里, 整个目录不进版本库
+    DOCS_DIR = ROOT_DIR / "docs"
+    SOURCE_DIR = DOCS_DIR / "src"
+    HTML_DIR = DOCS_DIR / "html"
+    XML_DIR = DOCS_DIR / "xml"
+    DOXYFILE = DOCS_DIR / "Doxyfile"
+    # Sphinx 的中间态放发布目录外面, 否则 .doctrees 会被一起上传和发布
+    DOCTREES_DIR = DOCS_DIR / "doctrees"
+
+    # ---------- 首页模板 ----------
+    # 正文模板, 里面用占位符标出由脚本填的位置
+    INDEX_TEMPLATE = SCRIPT_DIR / "index.rst"
+    MODULE_PLACEHOLDER = "@MODULES@"
+    # 构建信息来源: 分支, 提交, 构建时间
+    BRANCH_PLACEHOLDER = "@BRANCH@"
+    COMMIT_PLACEHOLDER = "@COMMIT@"
+    BUILT_AT_PLACEHOLDER = "@BUILT_AT@"
+
+    # ---------- 依赖 ----------
+    # Sphinx 侧需要的包, 缺了直接退出, 不要等到构建一半才发现
+    REQUIRED_MODULES = ("sphinx", "breathe", "furo")
 
 
 class SphinxConfig:
@@ -61,7 +73,7 @@ class SphinxConfig:
         self.extensions = ["breathe"]
 
         # 头文件注释由 Doxygen 解析成 XML, 这里告诉 Breathe 去哪读
-        self.breathe_projects = {"toylib": XML_DIR.as_posix()}
+        self.breathe_projects = {"toylib": BuildConfig.XML_DIR.as_posix()}
         self.breathe_default_project = "toylib"
         # 头文件按 C 解析, 不明确指定的话 Breathe 有可能当成 C++ 处理
         self.breathe_domain_by_extension = {"h": "c"}
@@ -92,18 +104,20 @@ class DoxygenConfig:
 
     属性名就是 Doxyfile 的键, 属性的定义顺序就是输出顺序, 由 to_doxyfile 序列化成 "键 = 值"。
     布尔值输出成 YES/NO, 路径统一用斜杠, 列表用反斜杠续行。
+
+    输入输出目录直接取 BuildConfig, 和 SphinxConfig 一样不需要外部传路径进来。
     """
 
-    def __init__(self, output_dir: Path, input_dir: Path, predefined: list[str]) -> None:
+    def __init__(self, predefined: list[str]) -> None:
         # 项目信息
         self.PROJECT_NAME = "toylib"
         self.PROJECT_BRIEF = "用C实现的基础数据结构库"
-        self.OUTPUT_DIRECTORY = output_dir
+        self.OUTPUT_DIRECTORY = BuildConfig.DOCS_DIR
         self.XML_OUTPUT = "xml"
         self.OUTPUT_LANGUAGE = "Chinese"
 
         # 只扫头文件: 公开接口都在include里, 实现细节不用进文档
-        self.INPUT = input_dir
+        self.INPUT = BuildConfig.INCLUDE_DIR
         self.FILE_PATTERNS = "*.h"
         self.RECURSIVE = True
         self.INPUT_ENCODING = "UTF-8"
@@ -112,7 +126,7 @@ class DoxygenConfig:
         # 注意剥离点是 INCLUDE_DIR 而不是 PACKAGE_DIR, 这样连顶级头文件也带分隔符(toylib/queue.h),
         # Breathe 才会走"尾部精确匹配"而不是"只比文件名", 否则 adt/queue.h 和 queue.h 仍会撞。
         self.FULL_PATH_NAMES = True
-        self.STRIP_FROM_PATH = INCLUDE_DIR
+        self.STRIP_FROM_PATH = BuildConfig.INCLUDE_DIR
 
         # 只输出有注释的成员, 漏注释会被 WARN_IF_UNDOCUMENTED 报出来
         self.EXTRACT_ALL = False
@@ -166,7 +180,7 @@ class DoxygenConfig:
         width = max(len(key) for key, _ in items)
         indent = " " * (width + 3)
 
-        lines = [f"# 本文件由 {SCRIPT_REL} 生成, 不要手改", ""]
+        lines = [f"# 本文件由 {BuildConfig.SCRIPT_REL} 生成, 不要手改", ""]
         for key, value in items:
             values = self._format_value(value)
             for index, text in enumerate(values):

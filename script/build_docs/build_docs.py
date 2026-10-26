@@ -34,32 +34,13 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # 配置和路径全在 config.py, 这里只取需要用的; 直接运行本文件时 sys.path[0] 就是本目录
-from config import (
-    BRANCH_PLACEHOLDER,
-    BUILT_AT_PLACEHOLDER,
-    COMMIT_PLACEHOLDER,
-    DOCS_DIR,
-    DOCTREES_DIR,
-    DOXYFILE,
-    DoxygenConfig,
-    HTML_DIR,
-    INCLUDE_DIR,
-    INDEX_TEMPLATE,
-    MODULE_PLACEHOLDER,
-    PACKAGE_DIR,
-    REQUIREMENTS,
-    REQUIRED_MODULES,
-    ROOT_DIR,
-    SCRIPT_DIR,
-    SOURCE_DIR,
-    XML_DIR,
-)
+from config import BuildConfig, DoxygenConfig
 
-# 文档层级的根(PACKAGE_DIR 本身), 用来区分"顶级"和"子目录"
+# 文档层级的根(BuildConfig.PACKAGE_DIR 本身), 用来区分"顶级"和"子目录"
 TOP = Path(".")
 
 # index.xml 里的一条文件复合项; 文件复合名默认只有纯文件名。
@@ -100,10 +81,10 @@ def preflight() -> str:
     if doxygen is None:
         raise SystemExit("找不到 doxygen, 请先安装并确保它在 PATH 里")
 
-    missing = [name for name in REQUIRED_MODULES if importlib.util.find_spec(name) is None]
+    missing = [name for name in BuildConfig.REQUIRED_MODULES if importlib.util.find_spec(name) is None]
     if missing:
         print(f"缺少 Python 依赖: {', '.join(missing)}", file=sys.stderr)
-        print(f"安装命令: {sys.executable} -m pip install -r {REQUIREMENTS}", file=sys.stderr)
+        print(f"安装命令: {sys.executable} -m pip install -r {BuildConfig.REQUIREMENTS}", file=sys.stderr)
         raise SystemExit(1)
 
     return doxygen
@@ -116,9 +97,9 @@ def collect_headers() -> list[Path]:
     @note 内容全部来自头文件里的注释, 所以只扫 include, 不看 src;
           按完整路径排而不是只按文件名, 保证不同机器上的顺序一致
     """
-    headers = sorted(INCLUDE_DIR.rglob("*.h"), key=lambda path: path.as_posix())
+    headers = sorted(BuildConfig.INCLUDE_DIR.rglob("*.h"), key=lambda path: path.as_posix())
     if not headers:
-        raise SystemExit(f"{INCLUDE_DIR} 下没有找到头文件")
+        raise SystemExit(f"{BuildConfig.INCLUDE_DIR} 下没有找到头文件")
     return headers
 
 
@@ -126,17 +107,15 @@ def collect_predefined(headers: list[Path]) -> list[str]:
     """扫出头文件里带默认值的宏, 用来填 Doxyfile 的 PREDEFINED
 
     @param headers collect_headers 的结果
-    @return 形如TOYLIB_QUEUE_VALUE_TYPE=int的列表, 按头文件顺序去重
+    @return 形如TOYLIB_QUEUE_VALUE_TYPE=int的列表, 按首次出现的顺序去重
     @note 新增一个带可配置宏的头文件时, 不需要回来改这里的任何东西
     """
-    predefined: list[str] = []
-    seen: set[str] = set()
+    # dict 保持插入顺序, 天然就是"按首次出现去重", 不用另外维护一个 seen 集合
+    found: dict[str, str] = {}
     for header in headers:
         for macro, value in DEFAULT_MACRO_PATTERN.findall(header.read_text(encoding="utf-8", errors="replace")):
-            if macro not in seen:
-                seen.add(macro)
-                predefined.append(f"{macro}={value.strip()}")
-    return predefined
+            found.setdefault(macro, value.strip())
+    return [f"{macro}={value}" for macro, value in found.items()]
 
 
 @dataclass(frozen=True)
@@ -152,6 +131,11 @@ class BuildInfo:
     built_at: str
 
 
+# 构建信息里的时间固定按中国时区(UTC+8)显示。中国不实行夏令时, 直接用固定偏移就够,
+# 也省得依赖 tzdata —— Windows 默认没有系统时区库, zoneinfo 会指向一个不存在的区域
+CHINA_TZ = timezone(timedelta(hours=8))
+
+
 def git_output(*args: str) -> str:
     """读一条 git 信息
 
@@ -160,7 +144,7 @@ def git_output(*args: str) -> str:
     @note 构建机上不一定有 git(比如只解压了源码包), 所以失败一律静默降级, 不影响出文档
     """
     try:
-        result = subprocess.run(["git", *args], cwd=ROOT_DIR, capture_output=True, text=True, check=True)
+        result = subprocess.run(["git", *args], cwd=BuildConfig.ROOT_DIR, capture_output=True, text=True, check=True)
     except (OSError, subprocess.CalledProcessError):
         return ""
     return result.stdout.strip()
@@ -180,8 +164,8 @@ def collect_build_info() -> BuildInfo:
     return BuildInfo(
         branch=branch or "未知",
         commit=commit[:7] or "未知",
-        # 带时区偏移, CI 是 UTC, 本地是 UTC+8, 都如实写出来
-        built_at=datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %z"),
+        # 统一按中国时区显示: 构建机的时区不固定(CI 上是 UTC, 本地是 UTC+8), 不钉死就会差 8 小时
+        built_at=datetime.now(CHINA_TZ).strftime("%Y-%m-%d %H:%M:%S %z"),
     )
 
 
@@ -194,12 +178,12 @@ def qualify_file_names() -> set[str]:
           doxygen 自己其实给它们分了不同的 refid(adt_2queue_8h / queue_8h),
           把 refid 对应文件里的 location 补回 name, 名字就唯一了
     """
-    index_file = XML_DIR / "index.xml"
+    index_file = BuildConfig.XML_DIR / "index.xml"
     names: set[str] = set()
 
     def replace(match: re.Match[str]) -> str:
         head, refid, _old_name, tail = match.groups()
-        compound = XML_DIR / f"{refid}.xml"
+        compound = BuildConfig.XML_DIR / f"{refid}.xml"
         location = XML_LOCATION_PATTERN.search(compound.read_text(encoding="utf-8")) if compound.is_file() else None
         if location is None:
             return match.group(0)
@@ -215,10 +199,9 @@ def generate_doxyfile(predefined: list[str]) -> None:
     """生成 Doxyfile
 
     @param predefined PREDEFINED 的内容
-    @note 输入输出都写绝对路径, 这样 doxygen 从哪个目录启动都能找到
+    @note 输入输出都写绝对路径(见 BuildConfig), 这样 doxygen 从哪个目录启动都能找到
     """
-    config = DoxygenConfig(output_dir=DOCS_DIR, input_dir=INCLUDE_DIR, predefined=predefined)
-    DOXYFILE.write_text(config.to_doxyfile(), encoding="utf-8")
+    BuildConfig.DOXYFILE.write_text(DoxygenConfig(predefined).to_doxyfile(), encoding="utf-8")
 
     summary = ", ".join(predefined) if predefined else "无"
     print(f"识别到 {len(predefined)} 个可配置宏: {summary}")
@@ -230,7 +213,8 @@ def render_page(title: str, entries: list[str]) -> str:
     @param title 页面标题
     @param entries toctree 条目, 相对于本页所在目录
     @return 页面正文
-    @note 子目录用它生成 index.rst, 这样嵌套结构在侧边栏里就是一层一层的
+    @note 子目录用它生成 index.rst, 这样嵌套结构在侧边栏里就是一层一层的;
+          标题下面那行等号必须和标题等长, 所以按标题长度现算
     """
     body = "".join(f"   {entry}\n" for entry in entries)
     return f"{title}\n{'=' * len(title)}\n\n.. toctree::\n   :maxdepth: 2\n\n{body}"
@@ -245,23 +229,23 @@ def render_index(entries: list[str], info: BuildInfo) -> str:
     @note 正文写在 script/build_docs/index.rst, 这里只做占位符替换;
           toctree 续行的缩进从占位符所在行读出来, 所以模板怎么缩进都对
     """
-    template = INDEX_TEMPLATE.read_text(encoding="utf-8")
-    match = re.search(rf"^([ \t]*){re.escape(MODULE_PLACEHOLDER)}", template, re.MULTILINE)
+    template = BuildConfig.INDEX_TEMPLATE.read_text(encoding="utf-8")
+    match = re.search(rf"^([ \t]*){re.escape(BuildConfig.MODULE_PLACEHOLDER)}", template, re.MULTILINE)
     if match is None:
-        raise SystemExit(f"{INDEX_TEMPLATE} 里找不到占位符 {MODULE_PLACEHOLDER}")
+        raise SystemExit(f"{BuildConfig.INDEX_TEMPLATE} 里找不到占位符 {BuildConfig.MODULE_PLACEHOLDER}")
 
     separator = "\n" + match.group(1)
-    text = template.replace(MODULE_PLACEHOLDER, separator.join(entries))
+    text = template.replace(BuildConfig.MODULE_PLACEHOLDER, separator.join(entries))
 
     values = {
-        BRANCH_PLACEHOLDER: info.branch,
-        COMMIT_PLACEHOLDER: info.commit,
-        BUILT_AT_PLACEHOLDER: info.built_at,
+        BuildConfig.BRANCH_PLACEHOLDER: info.branch,
+        BuildConfig.COMMIT_PLACEHOLDER: info.commit,
+        BuildConfig.BUILT_AT_PLACEHOLDER: info.built_at,
     }
     for placeholder, value in values.items():
         # 占位符被误删时直接报错, 别静默生成一份没有构建信息的首页
         if placeholder not in text:
-            raise SystemExit(f"{INDEX_TEMPLATE} 里找不到占位符 {placeholder}")
+            raise SystemExit(f"{BuildConfig.INDEX_TEMPLATE} 里找不到占位符 {placeholder}")
         text = text.replace(placeholder, value)
 
     return text
@@ -278,19 +262,19 @@ def generate_sources(headers: list[Path], file_names: set[str], info: BuildInfo)
           utils/error.h 会落到 api/utils/error.rst, 并自动生成 api/utils/index.rst 承担那层目录,
           所以新增子模块、模块里再套模块都不需要改任何配置
     """
-    api_dir = SOURCE_DIR / "api"
+    api_dir = BuildConfig.SOURCE_DIR / "api"
     shutil.rmtree(api_dir, ignore_errors=True)
 
     # 目录 -> 该目录下直接包含的模块名
     modules: dict[Path, list[str]] = defaultdict(list)
 
     for header in headers:
-        rel = header.relative_to(PACKAGE_DIR)
+        rel = header.relative_to(BuildConfig.PACKAGE_DIR)
         page = api_dir / rel.with_suffix(".rst")
         page.parent.mkdir(parents=True, exist_ok=True)
 
         # 优先用带目录的相对路径(唯一), 拿不到就退回纯文件名
-        target = header.relative_to(INCLUDE_DIR).as_posix()
+        target = header.relative_to(BuildConfig.INCLUDE_DIR).as_posix()
         if target not in file_names:
             target = header.name
 
@@ -301,18 +285,20 @@ def generate_sources(headers: list[Path], file_names: set[str], info: BuildInfo)
     # 出现过的所有目录(不含根), 连同它的每一级父目录
     folders = {folder for parent in modules for folder in (parent, *parent.parents)} - {TOP}
 
+    # 目录 -> 它的直接子目录条目。先算一遍, 目录页和首页都从这里取, 不用反复扫 folders
+    subdirs: dict[Path, list[str]] = defaultdict(list)
+    for folder in sorted(folders):
+        subdirs[folder.parent].append(f"{folder.name}/index")
+
     # 子目录各自生成 index, 把嵌套结构铺开
     for folder in sorted(folders):
         (api_dir / folder).mkdir(parents=True, exist_ok=True)
-        children = [f"{sub.name}/index" for sub in sorted(folders) if sub.parent == folder]
-        (api_dir / folder / "index.rst").write_text(
-            render_page(folder.name, modules[folder] + children), encoding="utf-8"
-        )
+        page = render_page(folder.name, modules[folder] + subdirs[folder])
+        (api_dir / folder / "index.rst").write_text(page, encoding="utf-8")
 
     # 首页列出最外层的模块和子目录
-    top = [f"api/{name}" for name in modules[TOP]]
-    top += [f"api/{sub.name}/index" for sub in sorted(folders) if sub.parent == TOP]
-    (SOURCE_DIR / "index.rst").write_text(render_index(top, info), encoding="utf-8")
+    top = [f"api/{name}" for name in modules[TOP]] + [f"api/{entry}" for entry in subdirs[TOP]]
+    (BuildConfig.SOURCE_DIR / "index.rst").write_text(render_index(top, info), encoding="utf-8")
 
     print(f"生成了 {len(headers)} 个模块页面, {len(folders)} 个目录页")
 
@@ -326,7 +312,7 @@ def run(command: list[str], title: str) -> None:
     """
     print(f"\n==> {title}")
     print("    " + " ".join(command))
-    subprocess.run(command, cwd=ROOT_DIR, check=True)
+    subprocess.run(command, cwd=BuildConfig.ROOT_DIR, check=True)
 
 
 def clean_output() -> None:
@@ -334,10 +320,10 @@ def clean_output() -> None:
 
     @note Windows 上文件被占用时 rmtree 会失败, 不让它把整个构建带崩, 但要如实说出来
     """
-    print(f"清理 {DOCS_DIR}")
-    shutil.rmtree(DOCS_DIR, ignore_errors=True)
-    if DOCS_DIR.exists():
-        print(f"警告: {DOCS_DIR} 没有完全删掉, 接着按增量构建")
+    print(f"清理 {BuildConfig.DOCS_DIR}")
+    shutil.rmtree(BuildConfig.DOCS_DIR, ignore_errors=True)
+    if BuildConfig.DOCS_DIR.exists():
+        print(f"警告: {BuildConfig.DOCS_DIR} 没有完全删掉, 接着按增量构建")
 
 
 def build(clean: bool, allow_warnings: bool) -> Path:
@@ -352,7 +338,7 @@ def build(clean: bool, allow_warnings: bool) -> Path:
     if clean:
         clean_output()
 
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    BuildConfig.DOCS_DIR.mkdir(parents=True, exist_ok=True)
 
     # 只扫一次头文件, 结果同时喂给 Doxyfile 和 rst
     headers = collect_headers()
@@ -362,7 +348,7 @@ def build(clean: bool, allow_warnings: bool) -> Path:
     info = collect_build_info()
     print(f"构建来源: 分支 {info.branch}, 提交 {info.commit}, {info.built_at}")
 
-    run([doxygen, str(DOXYFILE)], "Doxygen 生成 XML")
+    run([doxygen, str(BuildConfig.DOXYFILE)], "Doxygen 生成 XML")
 
     # 得等 doxygen 跑完才知道每个文件在 XML 里叫什么, 所以 rst 放在它后面写
     generate_sources(headers, qualify_file_names(), info)
@@ -376,16 +362,16 @@ def build(clean: bool, allow_warnings: bool) -> Path:
         "html",
         "--keep-going",
         "-c",
-        str(SCRIPT_DIR),
+        str(BuildConfig.SCRIPT_DIR),
         "-d",
-        str(DOCTREES_DIR),
+        str(BuildConfig.DOCTREES_DIR),
     ]
     if not allow_warnings:
         sphinx.append("-W")
-    sphinx += [str(SOURCE_DIR), str(HTML_DIR)]
+    sphinx += [str(BuildConfig.SOURCE_DIR), str(BuildConfig.HTML_DIR)]
     run(sphinx, "Sphinx 生成 HTML")
 
-    return HTML_DIR
+    return BuildConfig.HTML_DIR
 
 
 def main() -> int:
