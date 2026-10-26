@@ -33,7 +33,7 @@ typedef struct {
 } SeqList;
 
 /**
- * 创建顺序表, 根据容量动态分配内存, length_置为0
+ * 按容量分配内存, 初始化空顺序表, length_置为0
  * @param seq_list 目标顺序表, 不为空指针
  * @param capacity 顺序表容量, 即能存放的元素个数, 取值[1, TOYLIB_SEQLIST_MAX_CAPACITY]
  * @return 成功或失败原因,
@@ -86,7 +86,7 @@ ToylibError seq_list_find(const SeqList* seq_list, size_t* index, TOYLIB_SEQLIST
  * @param seq_list 目标顺序表, 不为空指针
  * @return 成功或失败原因,
  *         顺序表未初始化返回TOYLIB_ERR_NOT_INITIALIZED
- * @note 仅适用于seq_list_create创建的顺序表; seq_list_init只借用调用方内存, 不应调用本函数
+ * @note 只能释放seq_list_init分配的内存, 释放后再次调用返回TOYLIB_ERR_NOT_INITIALIZED
  */
 ToylibError seq_list_free(SeqList* seq_list);
 

@@ -21,7 +21,7 @@ TEST_CASE("init rejects a null stack pointer") {
 
 /**
  * 校验init校验容量下界: 0不是合法容量
- * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create的判定保持一致
+ * @note 容量下界封闭, 1是合法的最小值, 和seq_list_init的判定保持一致
  */
 TEST_CASE("init rejects a zero capacity") {
     Stack stack{};

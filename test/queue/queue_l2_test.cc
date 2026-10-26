@@ -21,7 +21,7 @@ TEST_CASE("init rejects a null queue pointer") {
 
 /**
  * 校验init校验容量下界: 0不是合法容量
- * @note 容量下界封闭, 1是合法的最小值, 和seq_list_create/stack_init的判定保持一致
+ * @note 容量下界封闭, 1是合法的最小值, 和seq_list_init/stack_init的判定保持一致
  */
 TEST_CASE("init rejects a zero capacity") {
     // 用哨兵值打底: 起手全零的话, 实现"写0"和"压根不写"在断言上看不出区别
