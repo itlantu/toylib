@@ -59,7 +59,7 @@ TEST_CASE("random operations match the model") {
     std::vector<Element> model;
 
     SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, kCapacity));
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, kCapacity));
 
     for (int step = 0; step < kSteps; ++step) {
         const int op = static_cast<int>(rng() % 5);

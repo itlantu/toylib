@@ -11,12 +11,12 @@ using toylib_test::make_list;
 TEST_SUITE_BEGIN("[SeqList][L1]");
 
 /**
- * 校验create在正常容量下能分配内存
+ * 校验init在正常容量下能分配内存
  * @note 契约: capacity_等于请求值, length_为 0, data_非空
  */
-TEST_CASE("create allocates memory and leaves the list empty") {
+TEST_CASE("init allocates memory and leaves the list empty") {
     SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, 16));
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, 16));
 
     CHECK_EQ(list.capacity_, 16);
     CHECK_EQ(list.length_, 0);
@@ -26,12 +26,12 @@ TEST_CASE("create allocates memory and leaves the list empty") {
 }
 
 /**
- * 校验create接受合法的最小容量 1
+ * 校验init接受合法的最小容量 1
  * @note 容量下界封闭: 1是合法的最小值, 0才算非法
  */
-TEST_CASE("create accepts the minimal capacity of 1") {
+TEST_CASE("init accepts the minimal capacity of 1") {
     SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, 1));
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, 1));
 
     CHECK_EQ(list.capacity_, 1);
     CHECK_EQ(list.length_, 0);
@@ -40,30 +40,12 @@ TEST_CASE("create accepts the minimal capacity of 1") {
 }
 
 /**
- * 校验init直接借用调用方的数组, 既不拷贝也不改写
- * @note 契约: data_指向传入数组, capacity_等于数组长度, length_为 0
- */
-TEST_CASE("init borrows the caller array and leaves the list empty") {
-    int buffer[8] = {10, 20, 30, 40, 50, 60, 70, 80};
-
-    SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, buffer, 8));
-
-    CHECK(list.data_ == buffer);
-    CHECK_EQ(list.capacity_, 8);
-    CHECK_EQ(list.length_, 0);
-    // 借用不等于接管, 调用方的数据不该被动过
-    CHECK_EQ(buffer[0], 10);
-    CHECK_EQ(buffer[7], 80);
-}
-
-/**
  * 校验free释放内存后把三个字段都清零
  * @note 字段复位之后才能被未初始化检查识别, 见L2的free rejects a list that was already freed
  */
 TEST_CASE("free releases memory and resets the fields") {
     SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, 8));
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, 8));
 
     CHECK_EQ(TOYLIB_OK, seq_list_free(&list));
 
@@ -252,26 +234,22 @@ TEST_CASE("length reports the element count") {
 }
 
 /**
- * 校验capacity返回容量, create和init两种来源都要对
- * @note 容量只在create/init时确定, 插入删除不会改变它
+ * 校验capacity返回init时确定的容量
+ * @note 容量只在init时确定, 插入删除不会改变它
  */
 TEST_CASE("capacity reports the allocated capacity") {
-    SeqList created = make_list(16, {1, 2, 3});
+    SeqList list = make_list(16, {1, 2, 3});
 
     size_t capacity = 99;
-    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&created, &capacity));
+    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&list, &capacity));
     CHECK_EQ(capacity, 16);
 
-    CHECK_EQ(TOYLIB_OK, seq_list_insert(&created, 3, 4));
-    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&created, &capacity));
+    // 插入之后容量不变
+    CHECK_EQ(TOYLIB_OK, seq_list_insert(&list, 3, 4));
+    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&list, &capacity));
     CHECK_EQ(capacity, 16);
-    seq_list_free(&created);
 
-    int buffer[8] = {0};
-    SeqList borrowed{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&borrowed, buffer, 8));
-    CHECK_EQ(TOYLIB_OK, seq_list_capacity(&borrowed, &capacity));
-    CHECK_EQ(capacity, 8);
+    seq_list_free(&list);
 }
 
 TEST_SUITE_END();

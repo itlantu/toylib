@@ -37,35 +37,22 @@ inline std::vector<Element> to_vector(const SeqList& list) {
  */
 inline SeqList make_list(const size_t capacity, const std::initializer_list<Element> values) {
     SeqList list{};
-    seq_list_create(&list, capacity);
+    seq_list_init(&list, capacity);
     for (const Element value : values)
         seq_list_insert(&list, list.length_, value);
     return list;
 }
 
 /**
- * 断言create用这个容量会失败, 且不留下半初始化的状态
+ * 断言init用这个容量会失败, 且不留下半初始化的状态
  * @param expected 期望的错误码
  * @param capacity 非法的容量
  */
-inline void check_create_rejected(const ToylibError expected, const size_t capacity) {
+inline void check_init_rejected(const ToylibError expected, const size_t capacity) {
     SeqList list{};
-    CHECK_EQ(expected, seq_list_create(&list, capacity));
+    CHECK_EQ(expected, seq_list_init(&list, capacity));
     CHECK(list.data_ == nullptr);
     CHECK_EQ(list.capacity_, 0);
-}
-
-/**
- * 断言init用这组参数会失败, 且不写入顺序表的字段
- * @param expected 期望的错误码
- * @param list 目标顺序表, 允许为空指针
- * @param data 元素数组, 允许为空指针
- * @param capacity 容量
- */
-inline void check_init_rejected(const ToylibError expected, SeqList* list, Element* data, const size_t capacity) {
-    CHECK_EQ(expected, seq_list_init(list, data, capacity));
-    if (list != nullptr)
-        CHECK(list->data_ == nullptr);
 }
 
 }  // namespace toylib_test

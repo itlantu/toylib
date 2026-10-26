@@ -11,7 +11,6 @@
 #include "doctest/doctest.h"
 #include "seqlist_support.h"
 
-using toylib_test::check_create_rejected;
 using toylib_test::check_init_rejected;
 using toylib_test::Element;
 using toylib_test::make_list;
@@ -20,61 +19,40 @@ using toylib_test::to_vector;
 TEST_SUITE_BEGIN("[SeqList][L2]");
 
 /**
- * 校验create拒绝空指针, 返回参数空指针错误
+ * 校验init拒绝空指针, 返回参数空指针错误
  * @note 空指针检查必须是函数入口的第一件事, 不能先解引用
  */
-TEST_CASE("create rejects a null list pointer") {
-    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_create(nullptr, 8));
+TEST_CASE("init rejects a null list pointer") {
+    CHECK_EQ(TOYLIB_ERR_BAD_ARG_NULL, seq_list_init(nullptr, 8));
 }
 
 /**
- * 校验 create拒绝 0 / 上限加一 / SIZE_MAX 三种非法容量
- * @note 契约: 返回BAD_ARG_2, 且不留下半初始化的字段
+ * 校验 init拒绝 0 / 上限加一 / SIZE_MAX 三种非法容量
+ * @note 契约: 返回BAD_ARG_VALUE, 且不留下半初始化的字段
  */
-TEST_CASE("create rejects an invalid capacity") {
+TEST_CASE("init rejects an invalid capacity") {
     SUBCASE("capacity is zero") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, 0);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, 0);
     }
     SUBCASE("capacity is max plus one") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
     }
     SUBCASE("capacity is SIZE_MAX") {
-        check_create_rejected(TOYLIB_ERR_BAD_ARG_VALUE, SIZE_MAX);
+        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, SIZE_MAX);
     }
 }
 
 /**
  * 校验容量上界 MAX_CAPACITY 本身是合法的
  */
-TEST_CASE("create accepts the maximum capacity") {
+TEST_CASE("init accepts the maximum capacity") {
     SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_create(&list, TOYLIB_SEQLIST_MAX_CAPACITY));
+    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, TOYLIB_SEQLIST_MAX_CAPACITY));
 
     CHECK(list.data_ != nullptr);
     CHECK_EQ(list.capacity_, TOYLIB_SEQLIST_MAX_CAPACITY);
 
     seq_list_free(&list);
-}
-
-/**
- * 校验init对每个非法参数返回对应的错误码
- */
-TEST_CASE("init rejects invalid arguments") {
-    int buffer[4] = {1, 2, 3, 4};
-    SeqList list{};
-
-    SUBCASE("null list pointer") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_NULL, nullptr, buffer, 4);
-    }
-    SUBCASE("null data pointer") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_NULL, &list, nullptr, 4);
-    }
-    SUBCASE("capacity is zero") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, &list, buffer, 0);
-    }
-    SUBCASE("capacity is above the limit") {
-        check_init_rejected(TOYLIB_ERR_BAD_ARG_VALUE, &list, buffer, TOYLIB_SEQLIST_MAX_CAPACITY + 1);
-    }
 }
 
 /**
@@ -194,14 +172,15 @@ TEST_CASE("delete the last element of a full list") {
 
 /**
  * 校验delete不会写到容量之外
- * @note 用init借用一段后面带哨兵的数组, 越界写会踩坏哨兵, 比等malloc/free报堆损坏稳定
+ * @note 拿一段后面带哨兵的数组当存储, 越界写会踩坏哨兵, 比等malloc/free报堆损坏稳定
  */
 TEST_CASE("delete never writes past the capacity") {
     // 哨兵值不能相同, 否则越界复制可能把同一个值搬回来, 反而看不出来
     int buffer[8] = {1, 2, 3, 4, 11, 22, 33, 44};
 
-    SeqList list{};
-    REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, buffer, 4));
+    // init现在总是自己分配恰好capacity个元素, 拿不到带哨兵的数组, 所以直接按字段搭一个;
+    // 结构体字段是公开的, 这种构造只出现在测试里, 用完也不需要free
+    SeqList list{4, 0, buffer};
     for (size_t i = 0; i < 4; ++i) {
         REQUIRE_EQ(TOYLIB_OK, seq_list_insert(&list, i, static_cast<Element>(i + 1)));
     }
