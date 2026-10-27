@@ -25,8 +25,11 @@ static DListNode* dlist_index_node_(const DList* dlist, const size_t index) {
     return p;
 }
 
-static DListNode* dlist_node_create(const TOYLIB_DLIST_VALUE_TYPE value, DListNode* prev, DListNode* next) {
+static DListNode* dlist_node_create_(const TOYLIB_DLIST_VALUE_TYPE value, DListNode* prev, DListNode* next) {
     DListNode* result = (DListNode*)malloc(sizeof(DListNode));
+    if (result == NULL) {
+        return NULL;
+    }
     result->value_ = value;
     result->prev_ = prev;
     result->next_ = next;
@@ -37,8 +40,8 @@ ToylibError dlist_init(DList* dlist) {
     if (dlist == NULL)
         return TOYLIB_ERR_BAD_ARG_NULL;
 
-    dlist->head_ = dlist_node_create(0, NULL, NULL);
-    dlist->tail_ = dlist_node_create(0, NULL, NULL);
+    dlist->head_ = dlist_node_create_(0, NULL, NULL);
+    dlist->tail_ = dlist_node_create_(0, NULL, NULL);
     if (dlist->head_ == NULL || dlist->tail_ == NULL)
         return TOYLIB_ERR_NOMEM;
 
@@ -65,7 +68,7 @@ ToylibError dlist_insert(DList* dlist, const size_t index, TOYLIB_DLIST_VALUE_TY
     // 插入
     DListNode* prev_node = p;
     DListNode* next_node = p->next_;
-    DListNode* insert_node = dlist_node_create(value, prev_node, next_node);
+    DListNode* insert_node = dlist_node_create_(value, prev_node, next_node);
     if (insert_node == NULL)
         return TOYLIB_ERR_NOMEM;
 
