@@ -1,0 +1,154 @@
+Checks: >
+  -*,
+
+  bugprone-argument-comment,
+  bugprone-assert-side-effect,
+  bugprone-branch-clone,
+  bugprone-copy-constructor-init,
+  bugprone-infinite-loop,
+  bugprone-macro-parentheses,
+  bugprone-misplaced-widening-cast,
+  bugprone-sizeof-expression,
+  bugprone-string-constructor,
+  bugprone-suspicious-include,
+  bugprone-suspicious-memset-usage,
+  bugprone-suspicious-missing-comma,
+  bugprone-swapped-arguments,
+  bugprone-terminating-continue,
+  bugprone-throw-keyword-missing,
+  bugprone-too-small-loop-variable,
+  bugprone-undefined-memory-manipulation,
+  bugprone-unhandled-exception-at-new,
+  bugprone-unused-raii,
+  bugprone-unused-return-value,
+  bugprone-use-after-move,
+
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  clang-analyzer-deadcode.*,
+  clang-analyzer-nullability.*,
+  clang-analyzer-security.*,
+  clang-analyzer-unix.*,
+  clang-analyzer-valist.*,
+
+  misc-definitions-in-headers,
+  misc-misplaced-const,
+  misc-redundant-expression,
+  misc-static-assert,
+  misc-throw-by-value-catch-by-reference,
+  misc-unconventional-assign-operator,
+  misc-uniqueptr-reset-release,
+  misc-unused-alias-decls,
+  misc-unused-parameters,
+  misc-unused-using-decls,
+  misc-use-anonymous-namespace,
+
+  modernize-make-unique,
+  modernize-use-default-member-init,
+  modernize-use-emplace,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-use-override,
+
+  performance-faster-string-find,
+  performance-for-range-copy,
+  performance-implicit-conversion-in-loop,
+  performance-inefficient-algorithm,
+  performance-inefficient-string-concatenation,
+  performance-inefficient-vector-operation,
+  performance-move-const-arg,
+  performance-move-constructor-init,
+  performance-no-automatic-move,
+  performance-noexcept-move-constructor,
+  performance-trivially-destructible,
+  performance-type-promotion-in-math-fn,
+  performance-unnecessary-copy-initialization,
+  performance-unnecessary-value-param,
+
+  portability-restrict-system-includes,
+  portability-simd-intrinsics,
+
+  readability-const-return-type,
+  readability-container-data-pointer,
+  readability-container-size-empty,
+  readability-delete-null-pointer,
+  readability-duplicate-include,
+  readability-else-after-return,
+  readability-identifier-naming,
+  readability-inconsistent-declaration-parameter-name,
+  readability-misleading-indentation,
+  readability-misplaced-array-index,
+  readability-non-const-parameter,
+  readability-redundant-control-flow,
+  readability-redundant-declaration,
+  readability-redundant-function-ptr-dereference,
+  readability-redundant-member-init,
+  readability-redundant-preprocessor,
+  readability-redundant-smartptr-get,
+  readability-redundant-string-cstr,
+  readability-redundant-string-init,
+  readability-simplify-boolean-expr,
+  readability-static-accessed-through-instance,
+  readability-static-definition-in-anonymous-namespace,
+  readability-uniqueptr-delete-release,
+  readability-use-anyofallof
+
+# 只检查本项目自己的头文件, 第三方(doctest)不参与。Windows和POSIX的路径分隔符都兼容
+HeaderFilterRegex: "(include[/\\\\]toylib|test[/\\\\])"
+
+# 报告里带上完整路径, 方便编辑器/终端跳转
+UseColor: true
+
+# 自动修时按 .clang-format 排版, 避免tidy的修复和格式检查互相打架
+FormatStyle: file
+
+# 不重复报告系统头里的问题
+SystemHeaders: false
+
+# 本地只报告不拦截, 方便边改边看。CI里的lint工作流会额外加 --warnings-as-errors='*',
+# 任何一条告警都会让流水线失败, 两边规则完全一致, 不存在"本地过CI挂"的情况。
+# 想本地模拟CI: clang-tidy -p build --warnings-as-errors='*' src/xxx.c
+WarningsAsErrors: ""
+
+CheckOptions:
+  # ---- 命名: 对齐仓库里已经在用的约定 ----
+  # 类型        PascalCase          SeqList / DListNode / ToylibError
+  # 枚举常量    TOYLIB_ 前缀        TOYLIB_ERR_OUT_OF_RANGE
+  # 函数/参数   小写下划线          seq_list_init / deleted_element
+  # 结构体成员  小写下划线+尾下划线  capacity_ / head_ / value_
+  # 头文件保护  TOYLIB_xxx_H
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.NamespaceCase: lower_case
+
+  readability-identifier-naming.EnumConstantCase: UPPER_CASE
+  readability-identifier-naming.EnumConstantPrefix: TOYLIB_
+
+  readability-identifier-naming.FunctionCase: lower_case
+  # 文件内静态辅助函数的约定是尾下划线(dlist_index_node_ / dlist_node_create_),
+  # clang-tidy没有"内部链接"这个类别, 只能按名字后缀放行, 公开API仍然受约束
+  readability-identifier-naming.FunctionIgnoredRegexp: "^.*_$"
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.MemberCase: lower_case
+  readability-identifier-naming.MemberSuffix: "_"
+
+  # 宏只约束大小写不约束前缀: 测试辅助里会定义 CHECK_SEQ 这种非TOYLIB_开头的宏
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+
+  readability-identifier-naming.HeaderGuardCase: UPPER_CASE
+  readability-identifier-naming.HeaderGuardPrefix: "TOYLIB_"
+  readability-identifier-naming.HeaderGuardSuffix: "_H"
+
+  # ---- 其它检查的细节 ----
+  # 头文件里声明的参数名必须和实现一致
+  readability-inconsistent-declaration-parameter-name.Strict: true
+
+  # 不强制[[maybe_unused]]
+  misc-unused-parameters.Strict: false
+
+  # 分支相同但很短(比如两行空实现)时不算克隆
+  bugprone-branch-clone.IgnoreMacros: true
