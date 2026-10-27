@@ -1,5 +1,5 @@
 # 参考: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
-name: cmake-multi-platform
+name: multi-platform-build
 
 on:
   push:
@@ -8,27 +8,6 @@ on:
     branches: [ "main", "dev" ]
 
 jobs:
-  # 格式检查与编译矩阵独立, 只跑一次不用跑三个平台
-  format:
-    name: clang-format
-    runs-on: ubuntu-latest
-
-    steps:
-      # 只检查代码有没有格式化, 不需要子模块
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      # 固定clang-format版本
-      - name: Install clang-format 19.1.5
-        run: |
-          pipx install clang-format==19.1.5
-          clang-format --version
-
-      - name: Check formatting
-        run: |
-          git ls-files -z '*.c' '*.h' '*.cc' '*.cpp' '*.hpp' \
-            | xargs -0 clang-format --dry-run --Werror --style=file
-
   build:
     name: ${{ matrix.os }} / ${{ matrix.c_compiler }} / ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}

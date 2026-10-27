@@ -1,0 +1,77 @@
+name: lint
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  # 排版检查: 只看代码有没有按.clang-format排好, 不需要子模块和编译
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # 固定版本, clang-format不同大版本的换行决策会变, 不锁版本迟早被无关提交刷屏
+      - name: Install clang-format 19.1.5
+        run: |
+          pipx install clang-format==19.1.5
+          clang-format --version
+
+      - name: Check formatting
+        run: |
+          git ls-files -z '*.c' '*.h' '*.cc' '*.cpp' '*.hpp' \
+            | xargs -0 clang-format --dry-run --Werror --style=file
+
+  # 规则检查: 需要compile_commands.json才能拿到每个文件的方言和宏定义
+  tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # configure阶段就要读取third_party/doctest的头文件路径, 不初始化子模块会直接报错
+      - name: Fetch submodules
+        run: |
+          git submodule update --init --recursive
+          git submodule status
+
+      # 与clang-format同属LLVM 19工具链
+      - name: Install clang-tidy 19.1.0.1
+        run: |
+          pipx install clang-tidy==19.1.0.1
+          clang-tidy --version
+
+      # 只configure不build: compile_commands.json在这一步就生成好了,
+      - name: Generate compilation database
+        run: >
+          cmake -B build
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # 逐文件跑并汇总退出码
+      - name: Run clang-tidy
+        shell: bash
+        run: |
+          mapfile -t files < <(git ls-files 'src/**/*.c' 'src/*.c' 'test/**/*.cc' 'test/*.cc')
+          echo "待检查文件 ${#files[@]} 个"
+
+          status=0
+          for file in "${files[@]}"; do
+            # 每个文件折成一组, 失败时日志里直接定位到是哪个文件
+            echo "::group::${file}"
+            clang-tidy -p build --warnings-as-errors='*' "${file}" || status=1
+            echo "::endgroup::"
+          done
+
+          if [ "${status}" -ne 0 ]; then
+            echo "::error::clang-tidy检查未通过, 本地复现: clang-tidy -p build --warnings-as-errors='*' <文件>"
+          fi
+          exit "${status}"
