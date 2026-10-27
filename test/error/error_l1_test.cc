@@ -17,8 +17,8 @@ TEST_SUITE_BEGIN("[Error][L1]");
  */
 TEST_CASE("each error code maps to its own name") {
     struct Entry {
-        ToylibError error;
-        const char* name;
+        ToylibError error_;
+        const char* name_;
     };
 
     const std::vector<Entry> table = {
@@ -35,7 +35,7 @@ TEST_CASE("each error code maps to its own name") {
 
     for (const Entry& entry : table) {
         // 用std::string比较, 直接比const char*比的是指针地址
-        CHECK_EQ(std::string(toylib_error_name(entry.error)), std::string(entry.name));
+        CHECK_EQ(std::string(toylib_error_name(entry.error_)), std::string(entry.name_));
     }
 }
 
