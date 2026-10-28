@@ -7,7 +7,9 @@
 #include "doctest/doctest.h"
 #include "queue_support.h"
 
+using toylib_test::check_sentinel_queue;
 using toylib_test::make_queue;
+using toylib_test::make_sentinel_queue;
 using toylib_test::Value;
 
 TEST_SUITE_BEGIN("[Queue][L2]");
@@ -25,15 +27,12 @@ TEST_CASE("init rejects a null queue pointer") {
  */
 TEST_CASE("init rejects a zero capacity") {
     // 用哨兵值打底: 起手全零的话, 实现"写0"和"压根不写"在断言上看不出区别
-    Queue queue{7, 3, 5, nullptr};
+    Queue queue = make_sentinel_queue();
 
     CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, 0));
 
     // 失败不能留下半初始化的状态, 也不能把调用方的原有内容改掉
-    CHECK_EQ(queue.capacity_, 7);
-    CHECK_EQ(queue.front_, 3);
-    CHECK_EQ(queue.length_, 5);
-    CHECK(queue.data_ == nullptr);
+    check_sentinel_queue(queue);
 }
 
 /**
@@ -41,7 +40,7 @@ TEST_CASE("init rejects a zero capacity") {
  * @note 上界是闭区间, MAX_SIZE本身合法, 加一就不行
  */
 TEST_CASE("init rejects a capacity above the max") {
-    Queue queue{7, 3, 5, nullptr};
+    Queue queue = make_sentinel_queue();
 
     SUBCASE("capacity is max plus one") {
         CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, TOYLIB_QUEUE_MAX_SIZE + 1));
@@ -50,10 +49,7 @@ TEST_CASE("init rejects a capacity above the max") {
         CHECK_EQ(TOYLIB_ERR_BAD_ARG_VALUE, queue_init(&queue, SIZE_MAX));
     }
 
-    CHECK_EQ(queue.capacity_, 7);
-    CHECK_EQ(queue.front_, 3);
-    CHECK_EQ(queue.length_, 5);
-    CHECK(queue.data_ == nullptr);
+    check_sentinel_queue(queue);
 }
 
 /**

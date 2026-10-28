@@ -6,16 +6,16 @@
  * "在满和空之间反复来回""下标反复回绕"这些组合路径都走一遍。
  */
 
-#include <cstdint>
 #include <deque>
 #include <random>
-#include <string>
 #include <vector>
 
 #include "doctest/doctest.h"
 #include "queue_support.h"
 
+using toylib_test::kOpNames;
 using toylib_test::make_queue;
+using toylib_test::to_model;
 using toylib_test::to_values;
 using toylib_test::Value;
 
@@ -36,20 +36,14 @@ TEST_CASE("random operations match the model") {
     Queue queue = make_queue(kCapacity, {});
 
     for (int step = 0; step < kSteps; ++step) {
-        // push占4成, pop占3成, 让长度在0和容量之间来回走, 更容易撞到满和空
+        // push占4成, pop占3成, front占2成, length占1成,
+        // 让长度在0和容量之间来回走, 更容易撞到满和空
         const unsigned dice = rng() % 10;
         const int op = dice < 4 ? 0 : (dice < 7 ? 1 : (dice < 9 ? 2 : 3));
         const Value value = static_cast<Value>(rng() % 100);
 
-        std::string op_name = "push";
-        if (op == 1)
-            op_name = "pop";
-        else if (op == 2)
-            op_name = "front";
-        else if (op == 3)
-            op_name = "length";
         CAPTURE(step);
-        CAPTURE(op_name);
+        CAPTURE(kOpNames[op]);
         CAPTURE(value);
 
         switch (op) {
@@ -93,7 +87,7 @@ TEST_CASE("random operations match the model") {
         }
 
         // 每一步之后全量比对, 从队头到队尾
-        CHECK_EQ(to_values(queue), std::vector<Value>(model.begin(), model.end()));
+        CHECK_EQ(to_values(queue), to_model(model));
 
         // 结构不变量: 下标必须始终落在[0, capacity), 长度不能超过容量
         CHECK(queue.front_ < queue.capacity_);
@@ -140,7 +134,7 @@ TEST_CASE("the head index wraps around while the queue stays full") {
 
         CHECK_EQ(queue.length_, kCapacity);
         CHECK_EQ(queue.front_, (static_cast<size_t>(round) + 1) % kCapacity);
-        CHECK_EQ(to_values(queue), std::vector<Value>(model.begin(), model.end()));
+        CHECK_EQ(to_values(queue), to_model(model));
     }
 
     queue_free(&queue);
