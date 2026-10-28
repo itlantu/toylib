@@ -7,6 +7,7 @@
 #include "dlist_support.h"
 #include "doctest/doctest.h"
 
+using toylib_test::check_empty;
 using toylib_test::make_dlist;
 using toylib_test::Value;
 
@@ -41,9 +42,7 @@ TEST_CASE("insert rejects an index past the end") {
     }
 
     // 失败后链表结构不变
-    CHECK_EQ(dlist.length_, 0);
-    CHECK(dlist.head_->next_ == dlist.tail_);
-    CHECK(dlist.tail_->prev_ == dlist.head_);
+    check_empty(dlist);
     dlist_free(&dlist);
 }
 

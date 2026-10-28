@@ -5,6 +5,8 @@
 #include "dlist_support.h"
 #include "doctest/doctest.h"
 
+using toylib_test::check_empty;
+using toylib_test::check_sentinels_outward;
 using toylib_test::make_dlist;
 using toylib_test::to_values_reversed;
 using toylib_test::Value;
@@ -22,9 +24,7 @@ TEST_CASE("init creates an empty list") {
 
     CHECK(dlist.head_ != nullptr);
     CHECK(dlist.tail_ != nullptr);
-    CHECK_EQ(dlist.length_, 0);
-    CHECK(dlist.head_->next_ == dlist.tail_);
-    CHECK(dlist.tail_->prev_ == dlist.head_);
+    check_empty(dlist);
 
     dlist_free(&dlist);
 }
@@ -35,8 +35,7 @@ TEST_CASE("init creates an empty list") {
 TEST_CASE("init leaves the sentinels unlinked outward") {
     DList dlist = make_dlist();
 
-    CHECK(dlist.head_->prev_ == nullptr);
-    CHECK(dlist.tail_->next_ == nullptr);
+    check_sentinels_outward(dlist);
 
     dlist_free(&dlist);
 }
@@ -172,9 +171,7 @@ TEST_CASE("delete all elements one by one leaves an empty list") {
     CHECK_EQ(TOYLIB_OK, dlist_delete(&dlist, 0, &removed));
     CHECK_EQ(TOYLIB_OK, dlist_delete(&dlist, 0, &removed));
 
-    CHECK_EQ(dlist.length_, 0);
-    CHECK(dlist.head_->next_ == dlist.tail_);
-    CHECK(dlist.tail_->prev_ == dlist.head_);
+    check_empty(dlist);
     dlist_free(&dlist);
 }
 

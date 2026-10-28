@@ -19,6 +19,12 @@ namespace toylib_test {
 using Value = TOYLIB_DLIST_VALUE_TYPE;
 
 /**
+ * L3随机序列测试的操作名, 下标就是用例里的op编号
+ * @note 顺序必须和L3的switch保持一致; 长度顺便充当可抽取的操作数
+ */
+inline constexpr const char* kOpNames[] = {"insert", "delete", "find", "get", "set"};
+
+/**
  * 从head_一路走到tail_, 收集真实节点的值
  * @param dlist 目标链表
  * @return 元素拷贝, 长度等于真实节点个数
@@ -42,6 +48,26 @@ inline std::vector<Value> to_values_reversed(const DList& dlist) {
         values.push_back(node->value_);
     }
     return values;
+}
+
+/**
+ * 断言链表是空的: 长度为0, 且两个哨兵互指
+ * @param dlist 目标链表
+ * @note 删空之后如果哨兵没重新互指, 长度断言仍然是0, 必须连着结构一起查
+ */
+inline void check_empty(const DList& dlist) {
+    CHECK_EQ(dlist.length_, 0);
+    CHECK(dlist.head_->next_ == dlist.tail_);
+    CHECK(dlist.tail_->prev_ == dlist.head_);
+}
+
+/**
+ * 断言两个哨兵朝外的一侧是空的, 不会指到链表外面
+ * @param dlist 目标链表
+ */
+inline void check_sentinels_outward(const DList& dlist) {
+    CHECK(dlist.head_->prev_ == nullptr);
+    CHECK(dlist.tail_->next_ == nullptr);
 }
 
 /**
