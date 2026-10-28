@@ -18,6 +18,12 @@ namespace toylib_test {
 using Element = TOYLIB_SEQLIST_ELEMENT_TYPE;
 
 /**
+ * L3随机序列测试的操作名, 下标就是用例里的op编号
+ * @note 顺序必须和L3的switch保持一致; 长度顺便充当可抽取的操作数
+ */
+inline constexpr const char* kOpNames[] = {"insert", "delete", "find", "get", "set"};
+
+/**
  * 取出顺序表当前存放的元素
  * @param list 目标顺序表
  * @return 元素拷贝, 长度等于list的length_

@@ -5,44 +5,17 @@
  * 这类问题只有多步序列才暴露。每一步都和模型全量比对, 保证跑偏时立刻停下。
  */
 
-#include <cstdint>
+#include <iterator>
 #include <random>
-#include <string>
 #include <vector>
 
 #include "doctest/doctest.h"
 #include "seqlist_support.h"
 
 using toylib_test::Element;
+using toylib_test::kOpNames;
+using toylib_test::pick_boundary_index;
 using toylib_test::to_vector;
-
-namespace {
-
-/**
- * 生成一个偏向边界的下标
- * @param rng 随机数引擎
- * @param length 当前长度
- * @return 下标, 大部分落在合法区间, 少数越界
- * @note 均匀随机会很少碰到0/length/SIZE_MAX这些关键点, 这里刻意加权
- */
-size_t pick_index(std::mt19937& rng, const size_t length) {
-    switch (rng() % 6) {
-        case 0:
-            return 0;
-        case 1:
-            return length == 0 ? 0 : length - 1;
-        case 2:
-            return length;
-        case 3:
-            return length + 1;
-        case 4:
-            return SIZE_MAX;
-        default:
-            return length == 0 ? 0 : rng() % (length + 1);
-    }
-}
-
-}  // namespace
 
 TEST_SUITE_BEGIN("[SeqList][L3]");
 
@@ -62,21 +35,12 @@ TEST_CASE("random operations match the model") {
     REQUIRE_EQ(TOYLIB_OK, seq_list_init(&list, kCapacity));
 
     for (int step = 0; step < kSteps; ++step) {
-        const int op = static_cast<int>(rng() % 5);
-        const size_t index = pick_index(rng, model.size());
+        const int op = static_cast<int>(rng() % std::size(kOpNames));
+        const size_t index = pick_boundary_index(rng, model.size());
         const Element value = static_cast<Element>(rng() % 10);
 
-        std::string op_name = "insert";
-        if (op == 1)
-            op_name = "delete";
-        else if (op == 2)
-            op_name = "find";
-        else if (op == 3)
-            op_name = "get";
-        else if (op == 4)
-            op_name = "set";
         CAPTURE(step);
-        CAPTURE(op_name);
+        CAPTURE(kOpNames[op]);
         CAPTURE(index);
         CAPTURE(value);
 
