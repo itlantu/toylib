@@ -19,6 +19,12 @@ namespace toylib_test {
 using Value = TOYLIB_STACK_VALUE_TYPE;
 
 /**
+ * L3随机序列测试的操作名, 下标就是用例里的op编号
+ * @note 顺序必须和L3的switch保持一致; 长度顺便充当可抽取的操作数
+ */
+inline constexpr const char* kOpNames[] = {"push", "pop", "top", "length"};
+
+/**
  * 从栈底到栈顶收集元素
  * @param stack 目标栈
  * @return 元素拷贝, 下标0是栈底, 末尾是栈顶

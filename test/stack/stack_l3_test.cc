@@ -5,14 +5,13 @@
  * 随机序列能把"压满再弹""弹空再压""在满和空之间反复来回"这些路径都走一遍。
  */
 
-#include <cstdint>
 #include <random>
-#include <string>
 #include <vector>
 
 #include "doctest/doctest.h"
 #include "stack_support.h"
 
+using toylib_test::kOpNames;
 using toylib_test::make_stack;
 using toylib_test::Value;
 
@@ -33,20 +32,14 @@ TEST_CASE("random operations match the model") {
     Stack stack = make_stack(kCapacity, {});
 
     for (int step = 0; step < kSteps; ++step) {
-        // push和pop各占4成, 让长度在0和容量之间来回走, 更容易撞到满栈和空栈
+        // push和pop各占4成, top和length各占1成,
+        // 让长度在0和容量之间来回走, 更容易撞到满栈和空栈
         const unsigned dice = rng() % 10;
         const int op = dice < 4 ? 0 : (dice < 8 ? 1 : (dice == 8 ? 2 : 3));
         const Value value = static_cast<Value>(rng() % 100);
 
-        std::string op_name = "push";
-        if (op == 1)
-            op_name = "pop";
-        else if (op == 2)
-            op_name = "top";
-        else if (op == 3)
-            op_name = "length";
         CAPTURE(step);
-        CAPTURE(op_name);
+        CAPTURE(kOpNames[op]);
         CAPTURE(value);
 
         switch (op) {
